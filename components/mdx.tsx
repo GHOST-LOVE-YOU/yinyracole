@@ -1,10 +1,17 @@
-import Image from "next/image";
+import Image, { ImageProps } from "next/image";
 import Link from "next/link";
-import { MDXRemote } from "next-mdx-remote/rsc";
-import React from "react";
+import { MDXRemote, MDXRemoteProps } from "next-mdx-remote/rsc";
+import React, { JSX } from "react";
 import { highlight } from "sugar-high";
 
-function Table({ data }) {
+interface TableProps {
+  data: {
+    headers: string[];
+    rows: (string | number)[][];
+  };
+}
+
+function Table({ data }: TableProps) {
   const headers = data.headers.map((header, index) => (
     <th key={index}>{header}</th>
   ));
@@ -26,15 +33,17 @@ function Table({ data }) {
   );
 }
 
-function CustomLink(props) {
+interface CustomLinkProps
+  extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href"> {
+  href: string;
+  children: React.ReactNode;
+}
+
+function CustomLink(props: CustomLinkProps) {
   const href = props.href;
 
   if (href.startsWith("/")) {
-    return (
-      <Link href={href} {...props}>
-        {props.children}
-      </Link>
-    );
+    return <Link {...props}>{props.children}</Link>;
   }
 
   if (href.startsWith("#")) {
@@ -44,62 +53,39 @@ function CustomLink(props) {
   return <a target="_blank" rel="noopener noreferrer" {...props} />;
 }
 
-function RoundedImage(props) {
-  return <Image alt={props.alt} className="rounded-lg" {...props} />;
+type RoundedImageProps = Omit<ImageProps, "className"> & {
+  overrideSrc?: string;
+  alt: string; // 显式声明 alt 为必需属性
+};
+
+function RoundedImage({ alt, overrideSrc, ...imageProps }: RoundedImageProps) {
+  return (
+    <Image
+      alt={alt} // 确保 alt 属性始终存在
+      {...imageProps}
+      src={overrideSrc || imageProps.src}
+      className="rounded-lg"
+    />
+  );
 }
 
-function Code({ children, ...props }) {
+interface CodeProps extends React.HTMLAttributes<HTMLElement> {
+  children: string;
+}
+
+function Code({ children, ...props }: CodeProps): JSX.Element {
   const codeHTML = highlight(children);
   return <code dangerouslySetInnerHTML={{ __html: codeHTML }} {...props} />;
 }
 
-function slugify(str) {
-  return str
-    .toString()
-    .toLowerCase()
-    .trim() // Remove whitespace from both ends of a string
-    .replace(/\s+/g, "-") // Replace spaces with -
-    .replace(/&/g, "-and-") // Replace & with 'and'
-    .replace(/[^\w\-]+/g, "") // Remove all non-word characters except for -
-    .replace(/\-\-+/g, "-"); // Replace multiple - with single -
-}
-
-function createHeading(level) {
-  const Heading = ({ children }) => {
-    const slug = slugify(children);
-    return React.createElement(
-      `h${level}`,
-      { id: slug },
-      [
-        React.createElement("a", {
-          href: `#${slug}`,
-          key: `link-${slug}`,
-          className: "anchor",
-        }),
-      ],
-      children,
-    );
-  };
-
-  Heading.displayName = `Heading${level}`;
-
-  return Heading;
-}
-
 const components = {
-  h1: createHeading(1),
-  h2: createHeading(2),
-  h3: createHeading(3),
-  h4: createHeading(4),
-  h5: createHeading(5),
-  h6: createHeading(6),
   Image: RoundedImage,
   a: CustomLink,
   code: Code,
   Table,
 };
 
-export function CustomMDX(props) {
+export function CustomMDX(props: MDXRemoteProps) {
   return (
     <MDXRemote
       {...props}

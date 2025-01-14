@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
 import { baseUrl } from "@/app/sitemap";
@@ -12,10 +13,18 @@ export async function generateStaticParams() {
   }));
 }
 
-export function generateMetadata({ params }) {
-  const post = getBlogPosts().find((post) => post.slug === params.slug);
+type Props = {
+  params: Promise<{ slug: string }>;
+};
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const slug = (await params).slug;
+  const post = getBlogPosts().find((post) => post.slug === slug);
   if (!post) {
-    return;
+    return {
+      title: "Not Found",
+      description: "This post could not be found",
+    };
   }
 
   const {
@@ -52,8 +61,13 @@ export function generateMetadata({ params }) {
   };
 }
 
-export default function Blog({ params }) {
-  const post = getBlogPosts().find((post) => post.slug === params.slug);
+export default async function Blog({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const slug = (await params).slug;
+  const post = getBlogPosts().find((post) => post.slug === slug);
 
   if (!post) {
     notFound();

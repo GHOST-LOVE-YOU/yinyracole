@@ -1,6 +1,7 @@
 import { getBlogPosts } from "@/lib/utils";
 
-export const baseUrl = "https://portfolio-blog-starter.vercel.app";
+export const baseUrl =
+  process.env.NEXT_PUBLIC_BASEURL || "http://localhost:3000";
 
 export default async function sitemap() {
   const blogs = getBlogPosts().map((post) => ({
