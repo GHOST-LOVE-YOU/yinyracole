@@ -1,6 +1,5 @@
+import { formatDate, getBlogPosts } from "@/lib/searchPost/utils";
 import Link from "next/link";
-
-import { formatDate, getBlogPosts } from "@/lib/utils";
 
 export function BlogPosts() {
   const allBlogs = getBlogPosts();

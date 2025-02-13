@@ -3,25 +3,36 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@codesandbox/sandpack-react": "^2.19.11",
+    "@mdx-js/language-server": "^0.5.2",
     "@mdx-js/loader": "^3.1.0",
     "@mdx-js/react": "^3.1.0",
-    "@next/mdx": "^15.1.4",
+    "@next/mdx": "^15.1.7",
+    "@radix-ui/react-accordion": "^1.2.3",
     "@types/mdx": "^2.0.13",
-    "eslint-config-prettier": "^9.1.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "eslint-plugin-import": "^2.31.0",
+    "eslint-plugin-mdx": "^3.1.5",
     "eslint-plugin-tailwindcss": "^3.17.5",
+    "fs-extra": "^11.3.0",
+    "lucide-react": "^0.475.0",
     "next": "15.1.2",
     "next-mdx-remote": "^5.0.0",
     "prettier": "^3.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "sugar-high": "^0.8.1"
+    "remark-frontmatter": "^5.0.0",
+    "remark-gfm": "^4.0.1",
+    "remark-mdx-frontmatter": "^5.0.0",
+    "sugar-high": "^0.8.1",
+    "tailwind-merge": "^3.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -31,8 +42,12 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.1.2",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.3",
     "postcss": "^8",
+    "raw-loader": "^4.0.2",
     "tailwindcss": "^3.4.1",
+    "tailwindcss-animate": "^1.0.7",
     "typescript": "^5"
   }
 }

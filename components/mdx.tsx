@@ -3,7 +3,6 @@ import Link from "next/link";
 import { MDXRemote, MDXRemoteProps } from "next-mdx-remote/rsc";
 import React, { JSX } from "react";
 import { highlight } from "sugar-high";
-
 interface TableProps {
   data: {
     headers: string[];

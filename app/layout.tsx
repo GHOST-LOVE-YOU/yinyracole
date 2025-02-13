@@ -56,7 +56,7 @@ export default function RootLayout({
       className="bg-white text-black dark:bg-black dark:text-white"
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} mx-4 mt-8 max-w-xl antialiased lg:mx-auto`}
+        className={`${geistSans.variable} ${geistMono.variable} mx-4 mt-8 max-w-5xl antialiased lg:mx-auto`}
       >
         <main className="mt-6 flex min-w-0 flex-auto flex-col px-2 md:px-0">
           <Navbar />

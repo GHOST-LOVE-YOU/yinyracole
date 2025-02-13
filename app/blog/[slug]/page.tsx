@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 
 import { baseUrl } from "@/app/sitemap";
 import { CustomMDX } from "@/components/mdx";
-import { formatDate, getBlogPosts } from "@/lib/utils";
+import { formatDate, getBlogPosts } from "@/lib/searchPost/utils";
 
 export async function generateStaticParams() {
   const posts = getBlogPosts();
@@ -105,7 +105,7 @@ export default async function Blog({
           {formatDate(post.metadata.publishedAt)}
         </p>
       </div>
-      <article className="prose">
+      <article>
         <CustomMDX source={post.content} />
       </article>
     </section>
