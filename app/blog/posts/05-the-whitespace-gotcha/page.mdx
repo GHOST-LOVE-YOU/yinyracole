@@ -1,0 +1,99 @@
+---
+title: "空白字符陷阱"
+publishedAt: "2025-02-06"
+summary: "空白字符陷阱"
+---
+
+import { Sandpack } from "@codesandbox/sandpack-react";
+
+import indexHtmlCode from "./code/index.html.example";
+import indexJsxCode from "./code/index.jsx.example";
+
+让我们谈谈 JSX 中最常见的一个“陷阱”。
+
+这是一个快速的示例：
+
+<Sandpack
+  files={{
+    "index.js": { code: indexJsxCode, active: true },
+  }}
+  template="react"
+/>
+
+请注意粗体文本和数字之间没有空格.不是 `returns: 123` ，它显示为： `returns:123` 。
+
+要理解为什么会发生这种情况，我们来考虑一下这个 JSX 如何编译成 JavaScript：
+
+```JavaScript
+const element = React.createElement(
+  'div',
+  {},
+  React.createElement(
+    'strong',
+    {},
+    'Days until Santa returns:'
+  ),
+  daysUntilSantaReturns
+);
+```
+
+我们的 \<div\> 有两个子元素，即 \<strong\> 标签和 daysUntilSantaReturns 变量。
+
+记住，JSX 不会编译为 HTML，它会编译为 JavaScript。当执行该 JavaScript 时，它只会创建并附加两个 HTML 节点：
+
+- 一个 \<strong\> 标签带有一些文本。
+
+- 一个文本节点，用于数字 123 。
+
+那我们该如何修复呢？最常见的解决方案是在花括号中添加一个单个空格字符：
+
+```JSX
+div>
+  <strong>Days until Santa returns:</strong>
+  {' '}
+  {daysUntilSantaReturns}
+</div>
+```
+
+这是它编译的方式：
+
+```JavaScript
+const element = React.createElement(
+  'div',
+  {},
+  React.createElement(
+    'strong',
+    {},
+    'Days until Santa returns:'
+  ),
+  ' ',
+  daysUntilSantaReturns
+);
+```
+
+这种行为实际上更像是一种特性，而不是一个错误。
+
+在网页中，空白有两个不同的用途：
+
+- 它在句子中的单词之间创建语法空格字符
+- 它作为缩进，以提高开发人员的代码可读性
+
+任何处理 HTML 或 JSX 的工具都需要弄清楚如何解释每个空白字符。它应该是一个空格，还是缩进？
+
+在 HTML 中，每个空白字符（以及换行符！）将产生一个可见的空格。在某些情况下，这对我们有利，但在其他情况下，它却妨碍了我们。
+
+例如，假设我们有 3 张图像，它们应该并排显示（请参见下面的代码示例）。默认情况下，HTML 会在它们之间渲染一个空格字符。
+
+这也取决于布局算法。在 Flexbox 中，浏览器会忽略所有空格和缩进，就像 JSX 编译器一样。
+
+JSX 添加 \{' '\} 的技巧可能并不像感觉上那样繁琐。这是我们向编译器表明空格字符应被视为语法空格而非缩进的一种方式。
+
+<Sandpack
+  files={{
+    "index.html": {
+      code: indexHtmlCode,
+      active: true,
+    },
+  }}
+  template="static"
+/>
