@@ -1,0 +1,35 @@
+---
+title: "迭代"
+publishedAt: "2025-02-14"
+summary: "迭代"
+---
+
+在最近的一次练习中，“构建 CRM”项目，我们提取了一个 ContactCard 组件，并将其用于我们的 3 个联系人：
+
+```html
+<ul>
+  <ContactCard
+    name="Sunita Kumar"
+    job="Electrical Engineer"
+    email="sunita.kumar@acme.co"
+  />
+  <ContactCard
+    name="Henderson G. Sterling II"
+    job="Receptionist"
+    email="henderson-the-second@acme.co"
+  />
+  <ContactCard
+    name="Aoi Kobayashi"
+    job="President"
+    email="kobayashi.aoi@acme.co"
+  />
+</ul>
+```
+
+这个解决方案是有效的，但它存在一个潜在问题：我们在编写代码时并不总是拥有这些数据。
+
+如果我们正在构建 CRM 软件，这些数据将是动态的。每个用户都会有一组独立的联系人，并且这些联系人会不断变化。我们不能像这样硬编码 3 个随机联系人！
+
+在 React 中，我们通常通过迭代来解决这个问题。我们使用原始、未加工的 JavaScript 动态创建这些 React 元素。
+
+让我们看看。

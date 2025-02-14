@@ -1,0 +1,125 @@
+---
+title: "使用 if 语句"
+publishedAt: "2025-02-14"
+summary: "使用 if 语句"
+---
+
+import { Sandpack } from "@codesandbox/sandpack-react";
+
+import appJsCode from "./code/App.js.example";
+import friendJsCode from "./code/Friend.js.example";
+import stylesCssCode from "./code/styles.css.example";
+
+通过花括号，我们可以在 JSX 中添加 JavaScript 表达式。不过，不幸的是，我们无法添加 JavaScript 语句。
+
+因此，这种行为是非法的：
+
+```JSX
+function Friend({ name, isOnline }) {
+  return (
+    <li className="friend">
+      {if (isOnline) {
+        <div className="green-dot" />
+      }}
+
+      {name}
+    </li>
+  );
+}
+```
+
+为什么这不起作用？好吧，让我们考虑这怎么编译成 JavaScript：
+
+```JavaScript
+function Friend({ name, isOnline }) {
+  return React.createElement(
+    'li',
+    { className: 'friend' },
+    if (isOnline) {
+      React.createElement('div', { className: 'green-dot' });
+    },
+    name
+  );
+}
+```
+
+问题是我们不能在像这样的函数调用中间放一个 if 语句——看一个更简单的例子，这等同于试图这样做：
+
+```JavaScript
+console.log(
+  if (isLoggedIn) {
+    "Logged in!"
+  } else {
+    "Not logged in"
+  }
+)
+```
+
+不过好消息是：我们仍然可以使用一个 if 语句！但我们必须先将其提上来，使其不在 React.createElement 调用的中间：
+
+<Sandpack
+  files={{
+    "App.js": { code: appJsCode },
+    "Friend.js": { code: friendJsCode },
+    "styles.css": { code: stylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+没有规定我们的 JSX 必须是 return 语句的一部分。我们可以在组件定义中的任何地方将 JSX 的一部分赋值给一个变量！
+
+JSX 编译为：
+
+```JSX
+function Friend({ name, isOnline }) {
+  let prefix;
+
+  if (isOnline) {
+    prefix = React.createElement(
+      'div',
+      { className: 'green-dot' }
+    );
+  }
+
+  return React.createElement(
+    'li',
+    { className: 'friend' },
+    prefix,
+    name
+  );
+}
+```
+
+在上面的代码中， prefix 要么会被赋值为一个 React 元素，要么根本不会被定义。这是可行的，因为 React 会忽略未定义的值。
+
+## Undefined 属性
+
+考虑以下代码：
+
+```JSX
+function Greeting() {
+  let someClass;
+
+  return (
+    <div className={someClass}>
+      Hello World
+    </div>
+  );
+}
+```
+
+你希望标记看起来是什么样的？
+
+将生成以下 HTML：
+
+```HTML
+<div>
+  Hello World
+</div>
+```
+
+在上面的代码中，创建了一个名为 someClass 的变量，但没有给它赋值。这意味着它解析为 undefined 。
+
+当 React 看到一个属性被设置为 undefined 时，它会完全从 DOM 节点中省略该属性。而不是给它一个空值如 className="" ，它会表现得好像我们甚至没有尝试设置值一样。
+
+这对于一些其他的假值也是正确的，比如 null 和 false 。

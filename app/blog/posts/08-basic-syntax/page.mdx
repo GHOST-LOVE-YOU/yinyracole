@@ -1,0 +1,96 @@
+---
+title: "基本语法"
+publishedAt: "2025-02-14"
+summaty: "基本语法"
+---
+
+好的，够了高层次的想法。让我们看一些代码！
+
+import { Sandpack } from "@codesandbox/sandpack-react";
+
+import indexJsCode from "./code/index.js.example";
+
+<Sandpack
+  files={{
+    "index.js": { code: indexJsCode, active: true },
+  }}
+  template="react"
+/>
+
+在 React 中，组件被定义为 JavaScript 函数。它们也可以使用 class 关键字进行定义，尽管这被认为是一种传统的替代方法，在现代 React 应用程序中不推荐使用。
+
+通常，React 组件返回一个或多个 React 元素。
+
+此组件， FriendlyGreeting ，创建一个描述段落的 React 元素，带有一些内置样式。为简单起见，在这里我们使用内联样式；我们将在接下来的课程中更多地讨论 React 丰富的样式生态系统。
+
+我们渲染一个组件的方式与渲染一个 HTML 标记相同。而不是渲染 \<div\> 或 \<h1\> ，我们渲染 \<FriendlyGreeting\> 。
+
+> ### 箭头函数 vs 传统函数
+>
+> 现代 JavaScript 支持两种不同的语法来编写函数。除了传统的方式，使用 function 关键字，你还可以使用"箭头函数"。如果你不熟悉箭头函数，请查看 JavaScript 入门课程“箭头函数”👀。
+>
+> 在定义 React 组件时应该使用哪种类型的函数？简短回答：没有关系。它们的工作方式完全相同。
+>
+> 作为对比，以下是我们使用箭头函数编写的 React 组件：
+>
+> ```JSX
+> const FriendlyGreeting = () => (
+>   <p
+>     style={{
+>       fontSize: '1.25rem',
+>       textAlign: 'center',
+>       color: 'sienna',
+>     }}
+>   >
+>     Greetings, weary traveller!
+>   </p>
+> );
+> ```
+>
+> 当涉及箭头函数时，存在一些功能限制，比如没有自己的 this 值，也不符合构造函数的要求。但是当涉及到 React 组件时，这些限制都不相关。箭头函数与传统函数一样有效。
+>
+> 就我个人而言，我更喜欢在我的 React 组件中使用传统函数，这似乎也更为常见。但说实话，这并没有任何实质性的区别。
+
+## 大分量规则
+
+创建组件时并没有太多规则，但有一个铁律：React 组件的首字母必须大写。这样 JSX 编译器就能区分我们是要渲染内置的 HTML 标签还是自定义的 React 组件。
+
+例如，这里有两个 JSX 元素：
+
+```JSX
+const heading = <h1>Hello!</h1>
+const greeting = <FriendlyGreeting />
+```
+
+以下是将相同元素编译为 JavaScript 的内容：
+
+```JSX
+const heading = React.createElement('h1', null, 'Hello!');
+const greeting = React.createElement(FriendlyGreeting, null);
+```
+
+一个 React 元素是我们想要创建的事物的描述。在某些情况下，我们想要创建一个 DOM 节点，比如一个 \<h1\> 或一个 \<p\> 。在其他情况下，我们想要创建一个组件实例。
+
+我们传递给 React.createElement 的第一个参数是我们想要创建的东西的“类型”。对于第一个元素，它是一个字符串（ "h1" ）。对于第二个元素，它是一个函数！这是 FriendlyGreeting ，而不是 "FriendlyGreeting" 。
+
+约定俗成的是对所有 React 组件名称使用 `PascalCase`<abbr title="一个格式选项，其中空格被移除，每个单词被大写，包括第一个字母。“hello world” 变成 “HelloWorld”。">?</abbr>，虽然从技术上讲只有第一个字母才真正 important。We could name it Friendlygreeting , 但更符合惯例的是使用 FriendlyGreeting 。
+
+> ### 为什么要基于字符大小写？
+>
+> 乍一看，这条规则感觉有些多余。难道 React 不能判断我们是在渲染一个 HTML 标签还是一个组件吗？内置的 HTML 标签也就那么多，对吧？
+>
+> 遗憾的是，事情并不像看起来那么简单……
+>
+> 让我们假装“Capital Letter”规则不存在，并且我们有以下 JSX 代码片段：
+>
+> ```JSX
+> const element = <button />;
+> ```
+>
+> 应该将此编译为内置的 \<button\> HTML 标签吗？或者，用户创建了一个名为 button 的组件吗？毕竟，许多组件库都有一个“button”组件！
+>
+> 也许我们可以制定一个新规则：组件不能与 HTML 标签共享名称。React 将拥有一个所有内置 HTML 标签的大列表，它们将被视为“保留字”。
+>
+> 那听起来不错，只是每隔一段时间，我们会出现一个新的 HTML 标签！HTML 标签的列表并不是固定不变的。想想看，如果 W3C 决定在明年创建一个新的 \<carousel\> 标签，会有多少个 React 应用程序崩溃！
+>
+> 最终，我认为使用字符大小写有很多道理。它让我们能够快速识别特定元素是内置的 HTML 标签还是自定义组件。我肯定没有更好的主意！

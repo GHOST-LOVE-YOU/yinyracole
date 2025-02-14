@@ -1,0 +1,161 @@
+---
+title: "对数据进行映射"
+publishenAt: "2025-02-14"
+summary: "对数据进行映射"
+---
+
+import { Sandpack } from "@codesandbox/sandpack-react";
+
+import AppJsCode from "./code/App.js.example";
+import ContactCardJsCode from "./code/ContactCard.js.example";
+import stylesCssCode from "./code/styles.css.example";
+
+好的，假设我们的客户关系管理（CRM）的数据保存在一个数组中，就像这样：
+
+<Sandpack
+  files={{
+    "App.js": { code: AppJsCode },
+    "ContactCard.js": { code: ContactCardJsCode },
+    "styles.css": { code: stylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+<details>
+我们想为 data 数组中的每个联系人创建一个 \<ContactCard> 元素，并传入他们的姓名/职位/电子邮件。
+
+在其他框架如 Vue 和 Angular 中，提供了用于迭代的特殊语法。然而，在 React 中，我们完全依赖 JavaScript。没有用于进行此类迭代的“React 语法”。
+
+与其他模板语言不同，在此没有类似 v-for 或 #each 的指令用于迭代。
+
+React 为我们提供了一项功能：我们可以传递一个数组，React 将为我们拆包并渲染每个项目。例如，我们可以渲染 \{\['hello', 'world']} ，我们将在 DOM 中看到包含“helloworld”内容。
+
+所以，解决方案是创建一个 React 元素数组，然后将该数组传递给 JSX 中的 React。
+
+我们可以通过多种方式创建一个元素数组：例如，我们可以使用一个 for 循环。但目前最常见的方法还是使用 .map 方法。
+
+我们可以调用 data.map 并为每个元素渲染一个 \<ContactCard> 元素。然后，我们可以在 \<ul> 内创建一个表达式插槽来接收该数组。
+
+> 在开发者控制台中，我们确实收到了有关缺失密钥的警告。我们将在下一课中解决这个警告。
+
+这是关于 React 的美妙之处。我们不必学习一个“神奇”的新语法，我们可以使用我们所知道和热爱的 JavaScript！例如， slice 让我们渲染数组的一个子集。
+
+</details>
+
+解决方案代码:
+
+```JSX
+import ContactCard from './ContactCard';
+
+const data = [
+  {
+    id: 'sunita-abc123',
+    name: 'Sunita Kumar',
+    job: 'Electrical Engineer',
+    email: 'sunita.kumar@acme.co',
+  },
+  {
+    id: 'henderson-def456',
+    name: 'Henderson G. Sterling II',
+    job: 'Receptionist',
+    email: 'henderson-the-second@acme.co',
+  },
+  {
+    id: 'aio-ghi789',
+    name: 'Aoi Kobayashi',
+    job: 'President',
+    email: 'kobayashi.aoi@acme.co',
+  },
+];
+
+function App() {
+  return (
+    <ul>
+      {data.map((contact) => (
+        <ContactCard
+          name={contact.name}
+          job={contact.job}
+          email={contact.email}
+        />
+      ))}
+    </ul>
+  );
+}
+
+export default App;
+```
+
+> ### 括号与波浪线
+>
+> 这里有一个相当常见的句法陷阱。考虑以下代码：
+>
+> ```JSX
+> return (
+>   <ul>
+>     {data.map((contact) => {
+>       <ContactCard
+>         name={contact.name}
+>         job={contact.job}
+>         email={contact.email}
+>       />
+>     })}
+>   </ul>
+> );
+>
+> ```
+>
+> 不再使用括号， ( 和 ) ，我们改用波浪括号， \{ 和 \} 。这似乎是一个无害的改变，但在这里却引发了大问题：没有任何联系人卡片会显示！
+>
+> 以下是发生的事情：为了使 \<ContactCard\> 元素被渲染，它们需要从 .map() 回调中返回。
+>
+> 我们可以通过添加 return 关键字来修复这个问题
+>
+> ```JSX
+> return (
+>   <ul>
+>     {data.map((contact) => {
+>       return <ContactCard
+>         name={contact.name}
+>         job={contact.job}
+>         email={contact.email}
+>       />
+>     })}
+>   </ul>
+> );
+> ```
+>
+> 这是编写箭头函数的“长形式”方式。花括号为我们提供了添加一个或多个 JavaScript 语句的空间。我们需要使用 return 关键字来控制返回的内容。
+>
+> 还有一种“短形式”语法用于箭头函数。在这种替代格式中，我们省略了花括号。我们只能传递一个表达式，它会自动返回。括号用于格式化目的。
+>
+> (这里并没有解释清楚, 以后在表)
+
+## JSX 在 JS 中的 JSX 内
+
+当在 React 中进行迭代时，最终会出现这样的结构并不罕见：
+
+```JSX
+<ul>
+  {items.map(item => (
+    <li>{item}</li>
+  ))}
+</ul>
+```
+
+在第二行，我们使用花括号在 JSX 中添加一些“原生 JS”。但然后我们在那些花括号中使用 JSX！一些开发人员对这是“合法”的事实感到意外。
+
+JSX 编译器能够解析“嵌套”JSX 调用，无需问题。最终结果类似于这样：
+
+```JSX
+React.createElement(
+  'ul',
+  {},
+  items.map(item => (
+    React.createElement(
+      'li',
+      {},
+      item
+    )
+  ))
+);
+```
