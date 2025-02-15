@@ -1,0 +1,192 @@
+---
+title: "范围工具"
+publishedAt: "2025-02-15"
+summary: "范围工具"
+---
+
+import { Sandpack } from "@codesandbox/sandpack-react";
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstStarRatingJsCode from "./code/first/StarRating.js.example";
+import firstStyleCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondStarRatingJsCode from "./code/second/StarRating.js.example";
+
+正如我们在几节课前看到的，我们可以使用 .map 来遍历数据数组，为每个项目渲染一个 React 元素。
+
+但是如果我们没有数组怎么办？
+
+例如，评分通常使用 5 星系统。假设我们想根据评分渲染 0 到 5 个小星星图标。
+
+花几分钟时间研究这里的问题。你的目标是在 StarRating 组件内渲染 n 颗星星，其中 n 是 rating 的值：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "StarRating.js": firstStarRatingJsCode,
+    "styles.css": { code: firstStyleCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+这是一个棘手的问题！
+
+我们在 JavaScript 中执行这种操作的默认工具将是一个 for 循环。然而，正如我们所学到的， for 是一条语句，我们不能在 JSX 中使用语句。
+
+这里有一个解决方案：我们可以在 JSX 之上使用 for 循环，来创建我们的元素数组：
+
+```JSX
+function StarRating({ rating }) {
+  let stars = [];
+
+  for (let i = 0; i < rating; i++) {
+    stars.push(
+      <img
+        key={i}
+        alt=""
+        className="gold-star"
+        src="https://sandpack-bundler.vercel.app/img/gold-star.svg"
+      />
+    );
+  }
+
+  return (
+    <div className="star-wrapper">
+      {stars}
+    </div>
+  );
+}
+```
+
+我们使用 for 循环创建一个图像元素数组，然后在我们的 JSX 中渲染该数组。正如我们在 .map 中看到的，React 可以为我们“解包”数组，并渲染其中的每个元素，只要我们为每个元素提供一个唯一的 key 。
+
+## 一种实用的替代方案
+
+这种方法没有问题，但我有一个更喜欢的替代方案：使用一个 range 函数。
+
+range 是一个工具函数。它不是 JavaScript 语言的一部分（不幸的是），但它是像 lodash 这样的工具库的基本组成部分。
+
+这是我最喜欢的工具之一。我在每个我参与的项目中都使用它（实际上，我在这个课程平台的代码库中使用了超过 20 次！）。我喜欢它。
+
+要理解它是如何工作的，我们来看一些例子：
+
+```JSX
+// Create an array from 0 (inclusive) to 2 (exclusive):
+range(2);
+// Produces: [0, 1]
+
+// Create an array from 0 (inclusive) to 5 (exclusive):
+range(5);
+// Produces: [0, 1, 2, 3, 4]
+
+// Create an array from 2 (inclusive) to 6 (exclusive):
+range(2, 6);
+// Produces: [2, 3, 4, 5]
+
+// Create an array from 2 to 10, picking every 2nd number
+range(2, 10, 2);
+// Produces: [2, 4, 6, 8]
+```
+
+本质上，它是“for”循环语句的表达式版本，就像 && 可以是“if”语句的表达式版本。这意味着我们可以在我们的 JSX 中使用它。
+
+这是我们如何使用它的：
+
+```JSX
+function StarRating({ rating }) {
+  return (
+    <div className="star-wrapper">
+      {range(rating).map((num) => (
+        <img
+          key={num}
+          alt=""
+          className="gold-star"
+          src="https://sandpack-bundler.vercel.app/img/gold-star.svg"
+        />
+      ))}
+    </div>
+  );
+}
+```
+
+range(rating) 将生成一个从 0 到（但不包括） n 的数组，其中 n 是提供的评级。然后，我们使用我们学到的 .map 技巧来遍历该数组，为每一个创建一个星形图像的副本。
+
+对于 key ，我们使用数组中生成的数字，因为我们知道这些数字将是唯一的。
+
+## 范围函数代码
+
+这是 range 函数的定义：
+
+```JSX
+const range = (start, end, step = 1) => {
+  let output = [];
+
+  if (typeof end === 'undefined') {
+    end = start;
+    start = 0;
+  }
+
+  for (let i = start; i < end; i += step) {
+    output.push(i);
+  }
+
+  return output;
+};
+```
+
+这是一个完整的解决方案，演示了这个功能：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "StarRating.js": secondStarRatingJsCode,
+    "styles.css": { code: firstStyleCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+在实际应用中，我喜欢创建一个 utils.js 文件来收集这些和其他实用的 JS 函数。你也可以使用 NPM 中的 lodash “range” 函数。
+
+> ### 一种更简单的替代方案？
+>
+> 许多学生指出，我们可以使用现代内置数组方法来解决这个问题。
+>
+> 有几种方法可以做到这一点，但这是我见过的最简单的选项：
+>
+> ```JSX
+> function StarRating({ rating }) {
+>   return (
+>     <div className="star-wrapper">
+>       {Array(rating).fill().map((_, index) => (
+>         <img
+>           key={index}
+>           alt=""
+>           className="gold-star"
+>           src="https://sandpack-bundler.vercel.app/img/gold-star.svg"
+>         />
+>       ))}
+>     </div>
+>   );
+> }
+> ```
+>
+> 就我个人而言，我并不是很喜欢这种方法。它暴露了 JavaScript 一丝凌乱的连接。它的功能也远远不够强大；我们无法控制起始值或“步长”量。
+>
+> 我宁愿想出一个多功能的助手函数，并在每次需要生成数字数组时一致地使用它。我已经使用同样的老式 range 函数多年了，这非常令人愉快。😄
+>
+> 现在，有一些方法可以使用现代内置的 JS 方法来复制我们的 range 功能。以下是一个学生分享的例子：
+>
+> ```JSX
+> const range = (start, stop, step = 1) => Array.from(
+>   { length: (stop - start) / step + 1 },
+>   (_, i) => start + i * step
+> );
+> ```
+>
+> 你对这个替代方案怎么看？它是更好还是更差？
+>
+> 在我职业生涯初期，我会告诉你这样更好。它更简短，这意味着出现错别字和其他错误的机会更少。并且它使用函数式编程原则：它不改变任何变量。
+>
+> 而且，如果那天我特别诚实，我会承认我喜欢这个替代代码的真正原因是它感觉很复杂。这比我作为初级开发者写的基本东西更进一步。它让我觉得自己很聪明。
+>
+> 自那时以来，我的想法变化很大。如今，我希望我的代码尽可能简单。我希望我团队中最初级的成员能够轻松理解我写的代码。

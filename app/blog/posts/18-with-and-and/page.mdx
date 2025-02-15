@@ -1,0 +1,165 @@
+---
+title: "&&"
+publishedAt: "2025-02-15"
+summary: "&&"
+---
+
+import { Sandpack } from "@codesandbox/sandpack-react";
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondShoppingListJsCode from "./code/second/ShoppingList.js.example";
+import thirdAppJsCode from "./code/third/App.js.example";
+
+使用 if 语句的缺点是我们需要将逻辑从其余标记中提取出来。虽然这是完全有效的，但它可能会加大理解组件结构的难度，尤其是在更大更复杂的组件中。我们不得不到处跳转才能理解返回了什么！
+
+幸运的是，我们可以直接在我们的 JSX 中嵌入 if 逻辑：使用 && 运算符。
+
+以下是代码
+
+<Sandpack
+  files={{
+    "App.js": { code: firstAppJsCode },
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+在 JavaScript 中， && 是一个控制流操作符。它的工作方式很像 if/else，只是它是一个表达式而不是语句。
+
+为了帮助我们理解这里实际发生了什么，让我们看看完全相同的逻辑，但用 if / else 表达：
+
+```JSX
+function Friend({ name, isOnline }) {
+  let prefix;
+  if (isOnline) {
+    prefix = <div className="green-dot" />;
+  } else {
+    prefix = isOnline;
+  }
+
+  return (
+    <li className="friend">
+      {prefix}
+      {name}
+    </li>
+  );
+}
+```
+
+&& 操作符被称为“控制流”操作符，因为它总是会导致选择两个路径中的一个。
+
+如果左侧值 ( isOnline ) 是假值，则该表达式短路，并评估为 isOnline ，而这又解析为 false 。然而，如果该值为真值，则评估为运算符右侧的内容 ( \<div className="green-dot" /\> )。
+
+你可以把 && 操作符看作是一个夜总会保镖。如果你试图用假身份证进入，保安人员不会让您访问另一侧的 React 元素。如果值为真，守卫将解开天鹅绒绳，我们就可以访问 React 元素。
+
+![green-dot-bouncer](/blog/react/green-dot-bouncer.png)
+
+## 常见错误：数字零
+
+考虑这种情况：
+
+```JSX
+function App() {
+  const shoppingList = ['avocado', 'banana', 'cinnamon'];
+  const numOfItems = shoppingList.length;
+
+  return (
+    <div>
+      {numOfItems && (
+        <ShoppingList items={shoppingList} />
+      )}
+    </div>
+  );
+}
+```
+
+我们有一个组件 ShoppingList ，只有在购物清单中至少有 1 件物品时，渲染该组件才有意义。
+
+如果你使用 JavaScript 一段时间，你可能知道在 JS 中除了 0 以外的每个数字都是 truthy。0 是唯一的 falsy 数字，就像 '' 是唯一的 falsy 字符串。
+
+因此，以这种方式做事似乎是有意义的。如果 numOfItems 中至少有 1 个项目，它将为 truthy，并且我们将呈现 \<ShoppingList> 元素。如果我们有 0 个项目，我们应该跳过它。
+
+但是当我们实际运行这个设置时看看会发生什么：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "ShoppingList.js": secondShoppingListJsCode,
+  }}
+  template="react"
+/>
+
+我们最终得到 0 被呈现！
+
+为什么会发生这种情况？我们需要记住两件事：
+
+&& 运算符不返回 true 或 false 。它返回左侧或右侧。所以，当我们的列表为空时，这个表达式的结果是 0 。
+
+React 会渲染你给它的任何数字，甚至是零！
+
+React 会忽略大多数假值，比如 false 或 null ，但它不会忽略数字零。
+
+实际上，让我们看看 React 如何处理所有不同的假值：
+
+<Sandpack
+  files={{
+    "App.js": { code: thirdAppJsCode },
+  }}
+  template="react"
+/>
+
+React 实际上会渲染数字 0 。而当我们考虑这一点时，这是有道理的。有许多情况我们会想要渲染这个数字：
+
+```JSX
+function Banner({ ticketsRemaining }) {
+  return (
+    <h2>
+      Number of JIRA tickets left: {ticketsRemaining}.
+    </h2>
+  );
+}
+```
+
+如果 ticketsRemaining 等于 0 ，我们想要显示数字 0 ，而不是空格！
+
+## 解决方案：始终在 && 运算符中使用布尔值
+
+为了避免在应用程序中到处出现随机 0 字符，我建议遵循一个“黄金法则”：确保 && 的左侧始终评估为布尔值，即 true 或 false 。
+
+例如，我们可以检查这个数字是否大于零：
+
+```JSX
+function App() {
+  const shoppingList = ['avocado', 'banana', 'cinnamon'];
+  const numOfItems = shoppingList.length;
+
+  return (
+    <div>
+      {numOfItems > 0 && (
+        <ShoppingList items={shoppingList} />
+      )}
+    </div>
+  );
+}
+```
+
+我真的喜欢这种方法。 我们确切地指明了条件是什么：如果购物清单中有 1 个或更多项目，则应渲染 \<ShoppingList\> 元素。 “大于”运算符（ > ）总是生成一个布尔值，要么 true ，要么 false 。
+
+我们也可以使用 !! 将任何非布尔值转换为布尔值：
+
+```JSX
+function App() {
+  const shoppingList = ['avocado', 'banana', 'cinnamon'];
+  const numOfItems = shoppingList.length;
+
+  return (
+    <div>
+      {!!numOfItems && (
+        <ShoppingList items={shoppingList} />
+      )}
+    </div>
+  );
+}
+```

@@ -20,6 +20,12 @@ const BlogList = () => {
     { id: "15-keys", title: "15 Keys" },
     { id: "16-conditional-rendering", title: "16 Conditional Rendering" },
     { id: "17-with-an-if-statement", title: "17 With an If Statement" },
+    { id: "18-with-and-and", title: "18 with &&" },
+    { id: "19-with-ternary", title: "19 With Ternary" },
+    { id: "20-showing-and-hiding", title: "20 Showing and Hiding" },
+    { id: "21-range-utility", title: "21 Range Utility" },
+    { id: "22-styling-in-react", title: "22 Styling In React" },
+    { id: "23-css-modules", title: "23 CSS Modules" },
   ];
 
   return (
