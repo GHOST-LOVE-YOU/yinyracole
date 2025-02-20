@@ -1,9 +1,26 @@
-# 时间线
+# yinyracole
 
-## 2025-01-13
+This is a Next.js application generated with
+[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
 
-还是先开始写比较好, 这个项目配合josh的css课程, 我打算使用tailwindcss复现网站中的所有css概念, 未来打算将他发展为个人博客.
+Run development server:
 
-## 2025-02-01
+```bash
+npm run dev
+# or
+pnpm dev
+# or
+yarn dev
+```
 
-完成了官方给的模板报错调试
+Open http://localhost:3000 with your browser to see the result.
+
+## Learn More
+
+To learn more about Next.js and Fumadocs, take a look at the following
+resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
+  features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Fumadocs](https://fumadocs.vercel.app) - learn about Fumadocs
