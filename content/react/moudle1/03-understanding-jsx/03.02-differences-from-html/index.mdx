@@ -1,0 +1,355 @@
+---
+title: "与 HTML 的区别"
+description: "与 HTML 的区别"
+---
+
+import indexJsCode from "./code/index.js.example";
+ 
+JSX 看起来像 HTML，但有一些基本区别。在这节课中，我们将深入探讨这些区别。
+
+注意：请不要觉得你现在必须记住所有这些规则！幸运的是，React 在我们犯这些错误时会很好地引导我们。如果你关注开发者控制台，你就不需要记住这些规则。
+
+## 保留字
+
+JavaScript 有[几十个](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Lexical_grammar#reserved_words)“保留字”。保留字是具有内置功能的关键字。因为它们已经有特定的功能，所以我们不能在我们的 JSX 中使用它们。
+
+例如：
+
+```jsx
+const while = 10;
+```
+
+如果我们运行这段代码，我们会得到一个语法错误，因为 while 是一个保留字。它用于像这样的“while 循环”：
+
+```jsx
+let count = 5;
+
+while (count > 0) {
+  console.log("Countdown:", count);
+  count -= 1;
+}
+```
+
+因为 JSX 会被转换为 JS，所以我们不能在 JSX 中使用任何保留字。而这是一个问题，因为 HTML 属性有时会与 JavaScript 保留字重叠。
+
+考虑这个 JSX：
+
+```jsx
+const element = (
+  <div>
+    <label for="name">Name:</label>
+    <input id="name" class="fun-input" />
+  </div>
+);
+```
+
+如果我们将其编译为 JavaScript，我们会发现我们使用了两个保留字：
+
+- for
+- class
+
+为了解决这种冲突，React 对这两个术语进行了轻微变体：
+
+{/* prettier-ignore */}
+```jsx
+const element = (
+  <div>
+// [!code highlight]
+    <label htmlFor="name">
+      Name:
+    </label>
+    <input 
+      id="name" 
+// [!code highlight]
+      className="fun-input" 
+    />
+  </div>
+);
+```
+
+{/* prettier-ignore */}
+具体地：
+
+- for 被更改为 htmlFor
+- class 被更改为 className
+
+> 更具体地说： for 和 class 在我们使用它们在原生 HTML 元素上时工作正常，但如果我们尝试在自定义组件上使用它们，就会遇到问题。
+
+很遗憾我们需要进行这种心理转换，但调整并不会花太长时间！
+
+<Callout type="warn" title="虽然这样似乎有效……">
+
+如果你实际尝试在你的 JSX 中使用 for 和 class ，你会收到来自 React 框架的友好警告，但你不会遇到任何错误。事实上，一切似乎都运作得很好！
+
+事实是，在这种特定情况下，没有与保留字冲突。但在其他情况下，你可能会遇到大问题。为了安全起见，你不应该在你的 JSX 中使用 for 或 class 。
+
+  <Accordions>
+    <Accordion title="展开查看更多">
+
+      更具体地说： for 和 class 在我们使用它们在原生 HTML 元素时运行良好，但如果我们尝试在自定义组件上使用它们，就会遇到问题。
+
+      您可以在[这个 CodeSandbox](https://codesandbox.io/p/sandbox/class-and-for-9ul99?file=%2Fsrc%2FApp.js) 中看到结果语法错误的示例。
+
+      我们还没有谈论自定义组件或属性，所以如果你不明白这里发生了什么，请不要担心。如果你真的对为什么 for 和 class 可能会造成问题感到好奇，可以先将这一课收藏起来，等你完成模块后再回来查看。到那时，这应该会更容易理解！
+
+    </Accordion>
+
+  </Accordions>
+
+</Callout>
+
+## 自闭合标签
+
+HTML 是一种相当随意的语言。例如，这是完全有效的 HTML：
+
+```html
+<div>
+  <p>This paragraph is opened… but never closed.</p>
+  <p>We're omitting the closing tags!</p>
+</div>
+```
+
+段落标签不能嵌套。浏览器能够聪明地判断第一个段落必须在第二个段落开始之前结束，它会自动为您插入 \<\/p> ，这类似于 JavaScript 引擎可以为您插入缺失的分号。
+
+JSX 有点让人感到沮丧。我们绝对需要关闭我们打开的每个标签。
+
+```html
+const element = (
+<div>
+  <p>These paragraphs are valid.</p>
+  <p>They include the closing tags.</p>
+</div>
+);
+```
+
+在 HTML5 中，某些元素没有闭合标签。例如， img 标签不能有子元素，因此不需要闭合：
+
+```html
+<img alt="A friendly kitten" src="/images/kitten.jpg" />
+```
+
+我们的 JSX 编译器对这个一点也不喜欢。我们需要显式关闭这个标签。我们可以使用“自闭合”标签来做到这一点：
+
+```jsx
+const element = (
+  <img
+    alt="A friendly kitten"
+    src="/images/kitten.jpg"
+    // [!code highlight]
+  />
+);
+```
+
+这种自闭合语法， \<img \/\> ，来自早期版本的 HTML。在现代 HTML 中并不是必需的，但仍然有效，许多开发人员出于习惯继续使用它。
+
+## 区分大小写的标签
+
+HTML 是一种不区分大小写的语言。事实上，许多年前，HTML 常常全部使用大写字母书写：
+
+```html
+<main>
+  <header>
+    <h1>Hello World!</h1>
+  </header>
+  <p>This HTML is so loud!</p>
+</main>
+```
+
+与此相反，JSX 是区分大小写的。我们的标签必须都是小写：
+
+```jsx
+const element = (
+  <main>
+    <header>
+      <h1>Hello World!</h1>
+    </header>
+    <p>This HTML is so loud!</p>
+  </main>
+);
+```
+
+这个限制看起来可能很任意，但这样做是有很好的理由的：JSX 编译器使用标签的大小写来判断它是“原始的”（DOM 的一部分）还是自定义组件。我们在学习组件时会了解更多相关信息。
+
+## 区分大小写的属性
+
+在 JSX 中，我们的属性需要使用“camelCase(驼峰命名法)”吗?<abbr title="一种格式化选项，其中移除空格，并将空格后的单词首字母大写。“Oh hi Thomas” 将变为 “ohHiThomas”。">\*</abbr>
+
+例如，这是有效的 HTML：
+
+```html
+<video src="/videos/cat-skateboarding.mp4" autoplay="true"></video>
+```
+
+在 JSX 中，我们需要将“autoplay”中的“p”大写，因为“auto”和“play”是两个不同的词：
+
+```jsx
+const element = (
+  <video
+    src="/videos/cat-skateboarding.mp4"
+    // [!code highlight]
+    autoPlay={true}
+    // [!code highlight]
+    //  ^ Capital “P”
+  />
+);
+```
+
+（我也切换到使用表达式插槽 {true} ，而不是将其保持为字符串。这在 React 中稍微更符合习惯，尽管两种选项都可以工作。）
+
+很难判断一个属性是否包含多个单词，尤其是当英语不是您的母语时！幸运的是，如果您犯了错误，开发者工具会给出有用的警告。
+
+<Sandpack
+  files={{ "index.js": { code: indexJsCode, active: true } }}
+  template="react"
+  options={{
+    layout: "console", // preview | tests | console
+  }}
+/>
+
+其他需要“驼峰命名法”的属性包括：
+
+- onclick → onClick
+- tabindex → tabIndex
+- stroke-dasharray → strokeDasharray
+
+<Callout type="warn" title="数据和 ARIA 属性保留其破折号">
+
+属性的“驼峰命名”有两个例外：数据属性和 ARIA 属性。
+
+例如，这是有效的 JSX：
+
+```jsx
+const element = (
+  <button data-test-id="close-dialog-button" aria-label="Close dialog">
+    <img alt="" src="/icons/x.svg" />
+  </button>
+);
+```
+
+数据属性在 React 中并不经常使用，但它们对于为自动化测试标记元素可能会有所帮助。ARIA 属性被辅助技术（如屏幕阅读器）使用，以提高我们应用程序的可访问性。
+
+</Callout>
+## 内联样式
+
+在 HTML 中， style 属性允许我们将一些样式应用于指定元素的内联样式
+
+```html
+<h1 style="font-size: 2rem;">Hello World!</h1>
+```
+
+在 JSX 中， style 取代了一个对象：
+
+```jsx
+const element = <h1 style={{ fontSize: "2rem" }}>Hello World!</h1>;
+```
+
+<Callout title="双波浪括号？？">
+
+可能会觉得奇怪，为什么我们需要两组花括号。为什么不能这样写呢？
+
+```jsx
+const element = (
+  <h1 style={ fontSize: '2rem' }>
+    Hello World!
+  </h1>
+);
+```
+
+<Accordions>
+  <Accordion title="展开查看更多">
+
+你还记得上一课我们用波浪括号将 JavaScript 表达式注入到我们的 JSX 中吗？例如，我们可以像这样使用波浪括号：
+
+```jsx
+const avatarSrc = "/images/avatar.png";
+
+const element = <img alt="user avatar" src={avatarSrc} />;
+```
+
+对于 style ，我们想要传递一个包含我们要设置的 CSS 属性及其值的对象：
+
+```jsx
+const customStyles = {
+  fontSize: "2rem",
+  fontWeight: "bold",
+};
+
+const element = <h1 style={customStyles}>Hello World!</h1>;
+```
+
+与其创建一个变量来保存这些样式，我们通常会直接将对象放入 JSX 表达式中：
+
+```jsx
+const element = (
+  <h1
+    style={{
+      fontSize: "2rem",
+      fontWeight: "bold",
+    }}
+  >
+    Hello World!
+  </h1>
+);
+```
+
+我们需要两组花括号：
+
+1. 外层集合在 JSX 中创建一个“表达式插槽”，用以容纳 JavaScript 表达式
+2. 内部集合创建一个 JavaScript 对象，其中保存了我们的 CSS 声明
+
+  </Accordion>
+
+</Accordions>
+
+</Callout>
+
+所有 CSS 属性都以“驼峰命名法”书写。每个破折号后面的单词都将首字母大写：
+
+- background-position 变成 backgroundPosition
+- border-bottom-color 变成 borderBottomColor
+
+对于供应商(vendor)前缀，如 -webkit-font-smoothing ，我们也将首字母大写： WebkitFontSmoothing 。
+
+此外，React 将自动为某些 CSS 属性应用 px 后缀。例如：
+
+```jsx
+<div
+  style={{
+    width: 200, // Equivalent to `width: 200px`
+    paddingTop: 8, // Equivalent to `padding-top: 8px`
+  }}
+>
+```
+
+注意默认情况下采用无单位值的属性，如 flex 或 lineHeight 。
+
+例如，这段代码将生成比默认高二十倍的行，而不是高 20px 的行：
+
+```jsx
+<p
+  style={{
+    lineHeight: 20, // Equivalent to `line-height: 20`
+  }}
+>
+```
+
+虽然在 React 中通常建议尽可能使用无单位的值，但如果您更喜欢，也可以完全使用完整单位！
+
+```jsx
+<p
+  style={{
+    width: '200px',
+    paddingTop: '8px',
+  }}
+>
+```
+
+<Callout title="内联样式不好吗？">
+
+你可能听说过不应该使用内联样式。它们是一个逃生口，就像 !important ，应该仅在特殊情况下作为最后的手段使用。
+
+就我个人而言，我同意我们不应该将内联样式作为我们主要的样式方法，但我认为在很多情况下，内联样式是可行的。这在现代 CSS 和 CSS 变量中尤其如此。
+
+虽然这不是本课程的重点，但我们将看到一些示例，展示如何在 React 中使用 CSS 变量，效果显著。
+
+</Callout>

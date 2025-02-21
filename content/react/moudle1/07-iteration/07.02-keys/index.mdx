@@ -1,0 +1,261 @@
+---
+title: "Keys"
+description: "Keys"
+---
+
+import AppJsCode from "./code/App.js.example";
+import ContactCardJsCode from "./code/ContactCard.js.example";
+import stylesCssCode from "./code/styles.css.example";
+
+在前一个课程中，您可能已经注意到我们收到控制台警告：
+
+> Warning: Each child in a list should have a unique "key" prop.
+
+当我们将一个元素数组传递给 React 时，我们还需要通过唯一标识每个元素来帮助 React。
+
+这是我们在客户关系管理应用程序中解决此问题的方法：
+
+```jsx
+const data = [
+  {
+    // [!code highlight]
+    id: "sunita-abc123",
+    name: "Sunita Kumar",
+    job: "Electrical Engineer",
+    email: "sunita.kumar@acme.co",
+  },
+  // ✂️ Other contacts trimmed
+];
+function App() {
+  return (
+    <ul>
+      {data.map((contact) => (
+        <ContactCard
+          // [!code highlight]
+          key={contact.id}
+          name={contact.name}
+          job={contact.job}
+          email={contact.email}
+        />
+      ))}
+    </ul>
+  );
+}
+```
+
+方便的是，我们 data 数组中的联系人有一个唯一标识符 id 。我们将该字符串设置为 key ，然后 React 的警告消失了。
+
+这里是实时沙盒，如果你想自己玩耍：
+
+<Sandpack
+  files={{
+    "App.js": { code: AppJsCode },
+    "ContactCard.js": { code: ContactCardJsCode },
+    "styles.css": { code: stylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+key 的目的是为了唯一标识每个 React 元素。
+
+## 为什么需要Keys
+
+当我学习东西时，我的一个个人抱怨是，教练告诉我该做什么，但不告诉我为什么需要以及它是如何工作的。
+
+这似乎有点奇怪，对吧？为什么 React 需要我们用独特的 key 注释每个元素？它难道不可以自己弄清楚吗？
+
+让我们谈谈这件事。
+
+<Accordions>
+<Accordion title="视频摘要">
+
+为了真正理解为什么需要键，我们需要深入了解 React 渲染器。我们将在课程后面介绍这个问题，但现在我们将坚持对问题的高层次概述。
+
+React 实际上并不知道在我们改变数据时具体发生了什么。React 看到的只是变化前后的状态。React 必须弄清楚如何更改 DOM 以匹配这个新的快照。
+
+存在无数种可能性，而 React 实际上并不知道该选择哪一个。它可以删除并添加新项目，或者可以编辑现有项目。
+
+不同的方法在性能方面有不同的含义。此外，还可能出现一些边缘案例的错误。
+
+键存在是为了向 React 显示路由。通过在所有快照中唯一标识每个项目，React 可以准确确定要执行的操作，确保最佳性能和没有边缘案例问题。
+
+如果这仍然让您感到困惑，不用担心。我们会在课程的后面更深入地了解keys！
+
+</Accordion>
+</Accordions>
+
+## 它去哪里？
+
+所以，之前的视频从一个非常高的层面讲述了密钥，解释了它们的目的以及为何它们是必要的。
+
+有另一个与钥匙相关的小谜题。这个问题是更低级的。
+
+看一下以下的 JSX：
+
+```jsx
+const element = (
+  <ContactCard
+    key="sunita-abc123"
+    name="Sunita Kumar"
+    job="Electrical Engineer"
+    email="sunita.kumar@acme.co"
+  />
+);
+```
+
+乍一看，似乎我们给这个组件提供了 4 个属性： key ， name ， job ，和 email 。
+
+但是，如果我们在这个 ContactCard 组件中添加一个 console.log ，我们会注意到缺少了什么：
+
+```jsx
+function ContactCard({ key, name, job, email }) {
+  console.log(key); // undefined
+  console.log(name); // 'Sunita Kumar'
+  console.log(job); // 'Electrical Engineer'
+  console.log(email); // 'sunita.kumar@acme.co'
+
+  return <li className="contact-card">{/* ✂️ Removed for brevity */}</li>;
+}
+```
+
+我们已经指定了 4 个 props，但只有 3 个传递了过来！ key 尚未提供。
+
+这是交易：在 React 中有少量“保留词”。 key 是其中之一。当我们将 key 应用于 React 元素时，实际上并未将其设置为 prop。
+
+让我们深入了解一下。首先，让我们用纯 JavaScript 来看一下，不使用 JSX：
+
+```js
+const element = React.createElement(ContactCard, {
+  key: "sunita-abc123",
+  name: "Sunita Kumar",
+  job: "Electrical Engineer",
+  email: "sunita.kumar@acme.co",
+});
+```
+
+嗯… 到目前为止， key 看起来还像一个属性。让我们继续。
+
+这段代码显示我们正在调用 React.createElement 函数。正如其名称所示，该函数创建一个 React 元素。如果我们执行此代码，我们将得到类似这样的结果：
+
+```js
+const element = {
+  type: ContactCard,
+  key: "sunita-abc123",
+  props: {
+    name: "Sunita Kumar",
+    job: "Electrical Engineer",
+    email: "sunita.kumar@acme.co",
+  },
+};
+```
+
+啊哈！ React.createElement() 函数已拿取我们的数据并用其生成了一个 React 元素，而该元素将 key 作为顶层属性！
+
+正如我们在“构建您自己的 React”课程中看到的那样，React 元素是描述 React 需要创建的对象的 JavaScript 对象。在这种情况下，元素描述了需要呈现的 ContactCard 组件。
+
+键标识特定的 React 元素。它是元素本身的属性，而不是需要传递给组件的东西！
+
+我们将涉及到一些相当高级的领域。元素和组件之间的关系是我们在整个课程中将要重新审视的内容，我不想自己走得太远。
+
+目前，重要的是理解这一点： key 看起来像一个props，但它是 React 用来识别 React 元素的特殊东西。
+
+## 关键规则
+
+让我们来看一些关于如何使用键的规则。
+
+### 顶层元素
+
+为了满足这个要求，需要将 key 应用到 .map() 调用中的最顶层元素。
+
+例如，这是不正确的：
+
+```jsx
+function NavigationLinks({ links }) {
+  return (
+    <ul>
+      {links.map((item) => (
+        <li>
+          <a key={item.id} href={item.href}>
+            {item.text}
+          </a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+从 React 的角度来看，它有一组 \<li\> 个 React 元素，并且看不到它们上面的任何唯一标识符。它不会“深入”查找子元素上的键。
+
+这是如何修复它的方式：
+
+```jsx
+function NavigationLinks({ links }) {
+  return (
+    <ul>
+      {links.map((item) => (
+        <li key={item.id}>
+          <a href={item.href}>{item.text}</a>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+在使用片段时，有时候需要切换到长格式 React.Fragment ，以便我们可以应用该键：
+
+```jsx
+// 🚫 Missing key:
+function Thing({ data }) {
+  return data.map((item) => (
+    <>
+      <p>{item.content}</p>
+      <button>Cancel</button>
+    </>
+  ));
+}
+
+// ✅ Fixed!
+function Thing({ data }) {
+  return data.map((item) => (
+    <React.Fragment key={item.id}>
+      <p>{item.content}</p>
+      <button>Cancel</button>
+    </React.Fragment>
+  ));
+}
+```
+
+### 非全局
+
+许多开发人员认为，keys必须在整个应用程序中是全局唯一的，但这是一个误解。keys只需要在其数组内是唯一的。
+
+例如，这是完全有效的：
+
+```jsx
+function App() {
+  return (
+    <ul>
+      {data.map((contact) => (
+        <ContactCard
+          key={contact.id}
+          name={contact.name}
+          job={contact.job}
+          email={contact.email}
+        />
+      ))}
+      {data.map((contact) => (
+        <ContactCard
+          key={contact.id}
+          name={contact.name}
+          job={contact.job}
+          email={contact.email}
+        />
+      ))}
+    </ul>
+  );
+}
+```
+
+每个 .map() 调用都会生成一个单独的数组，因此没有问题。👍

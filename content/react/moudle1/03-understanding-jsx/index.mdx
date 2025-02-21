@@ -1,0 +1,244 @@
+---
+title: "理解jsx"
+description: "理解jsx"
+---
+
+import htmlCode from "./code/index.html.example";
+import jsCode from "./code/index.js.example";
+
+在上一课中，我们看到如何使用普通的日常 JavaScript 创建一个 React 元素。
+
+实际上，很少有开发者以这种方式创建元素。使用一种叫做 JSX 的专用语法要普遍得多。
+
+这是相同的示例，但使用 JSX 而不是 JavaScript：
+
+<Sandpack
+  files={{
+    "/index.js": jsCode,
+    "/index.html": {
+      code: htmlCode,
+      active: true,
+    },
+  }}
+  template="react"
+/>
+
+我们使用类似 HTML 的语法来创建 React 元素，而不是写 React.createElement 。
+
+为什么我们使用 JSX？从这个小例子中可能不容易看出，但随着我们标记的增大，JSX 显得越来越容易阅读。
+
+记得我提到过 React 元素可以形成树状结构，就像 HTML 元素一样吗？当我们将 React 元素的“children”参数设置为另一个 React 元素时，就会发生这种情况。
+
+在实践中，我们的 React 代码中经常会出现相当复杂的树形结构。这里有一个例子，使用纯 JavaScript：
+
+```js
+const element = React.createElement(
+  "nav",
+  { id: "main-nav" },
+  React.createElement(
+    "ul",
+    null,
+    React.createElement(
+      "li",
+      null,
+      React.createElement("a", { href: "/" }, "Home"),
+    ),
+    React.createElement(
+      "li",
+      null,
+      React.createElement("a", { href: "/archives" }, "Archives"),
+    ),
+  ),
+);
+```
+
+挺难读的，对吧？这是相同的例子用 JSX 表示：
+
+```js
+// In JSX:
+const element = (
+  <nav id="main-nav">
+    <ul>
+      <li>
+        <a href="/">Home</a>
+      </li>
+      <li>
+        <a href="/archives">Archives</a>
+      </li>
+    </ul>
+  </nav>
+);
+```
+
+无论出于什么原因，类似 HTML 的语法更容易被我们的脑海处理。它更易读，也更易写。
+
+<Callout title="为什么要加括号？">
+  在上面的示例中，我们将 JSX 用括号括起来，就像这样：
+
+```js
+const element = (
+  <nav id="main-nav">
+    <ul>(List items removed, for brevity)</ul>
+  </nav>
+);
+```
+
+这仅仅是出于格式的目的。它允许我们将 JSX 推到下一行。
+
+如果我们愿意的话，我们可以跳过括号，将其“内联”处理，就像这样：
+
+{/* prettier-ignore */}
+```js
+const element = <nav id="main-nav">
+    <ul>(List AccordionItemms removed, for brevity)</ul>
+  </nav>;
+```
+
+{/* prettier-ignore */}
+这完全有效，但读起来有点困难；东西“对齐”得不那么好。因此，在 React 中的惯例是将 JSX 推到自己的行上，并使用括号以确保它正常工作。
+
+这是一个即使在 JSX/React 之外也可以使用的技巧。括号可以用来改善格式，例如这样：
+
+```js
+const friendlyGreeting = "Totally valid way to format things!";
+```
+
+</Callout>
+
+## 将 JSX 编译为 JavaScript
+
+如果我们尝试在浏览器中运行这段 JSX 代码，我们会遇到一个错误。JavaScript 引擎不理解 JSX，它们只理解 JavaScript。因此，我们需要将我们的代码“编译”成普通的 JS。
+
+这通常作为构建步骤的一部分进行，使用像 Babel 这样的工具；我们将在课程后面详细讨论这个。
+
+现在要理解的重要一点是：我们写的 JSX 会被转换为 React.createElement 。当我们的代码在用户的浏览器中运行时，所有的 JSX 都被去掉了，我们留下的是一个充满嵌套 React.createElement 调用的 JS 文件。
+
+<Callout title="“转译”与“编译”">
+将 JSX 转换为浏览器友好的 JS 的过程有时被称为“转译”（transpiling），而不是“编译”（compiling）。这些术语是同义词，还是有区别？
+
+有区别，但在我看来，这个区别并不重要。你可以把它们当作同义词。在本课程中，我将专门使用“编译”。
+
+如果你感兴趣，可以在这里阅读更多关于区别的信息：
+
+{/* prettier-ignore */}
+<Accordions type="single">
+  <Accordion title="展开以查看更多">
+  在正式的计算机科学术语中，“编译(compiling)”通常指的是将可供人类阅读的代码转换为机器可读取的代码的过程。
+
+例如，编译器可能会将像 Python
+
+这样的高级语言转换为“机器代码”，这些低级指令对我们来说看起来像是胡言乱语：
+
+```text
+  // An example of machine code, courtesy of Wikipedia:
+    6      5     5     5     5      6 bits
+  [  op  |  rs |  rt |  rd |shamt| funct]  R-type
+  [  op  |  rs |  rt | address/immediate]  I-type
+  [  op  |        target address        ]  J-type
+```
+
+“转译(transpiling)”一词通常指的是将一种高级语言转换为另一种高级语言。例如，我们可能会将 JavaScript“转译”为 Python。
+
+所以，如果我们想要非常严格和挑剔的话，哪个术语更适合用于 JSX → JS 转换？
+
+好吧，这很难说！浏览器不理解 JSX，但它们理解 JS，因此我们在处理 JSX 时肯定是“更接近底层”。我们让它变得更难以被人类阅读，更容易被机器读取。
+
+另一方面，大多数 React 开发者能够理解该过程生成的 JS 代码。它的可读性稍差，但并不是胡言乱语。当一个 Python 开发者将他们的应用程序编译成机器代码时，他们完全无法理解输出。
+
+请记住：我们讨论的是正式的计算机科学术语。对我们大多数人来说，“编译”并没有那么精确定义。我认为当大多数开发者使用“编译”这个术语时，我们实际上是在谈论将代码从一种形式转换为另一种形式。
+
+因此，我更喜欢使用“编译”这个术语。我们大多数人会理解“将 JSX 编译为 JS”的意思，这才是最重要的。
+
+</Accordion>
+</Accordions>
+
+</Callout>
+{/*prettier-ignore*/}
+
+<Callout type="warn" title="文件扩展名和 JSX">
+  在上面的代码游乐场中，文件名为 index.js 。几个学生问：文件不应该命名为 index.jsx 吗，因为它不是一个“纯”的 JS 文件？
+
+提供一些背景信息：在 React 的早期，任何包含 JSX 的文件都必须使用 .jsx 文件扩展名。这是我们告诉编译器的方式：“嘿！这个文件包含一些 JSX，需要编译成 JS。”
+
+这变得有点烦人。这又多了一件需要考虑的事情，给开发过程增加了一点摩擦。每次添加/删除 JSX 时都需要重命名文件，这有点麻烦！
+
+因此，规则被放宽了。如今，我们可以在一个 .js 文件中包含 JSX，一切都会完美运行。
+
+编译器假设任何 .js 文件都可以包含 JSX。
+
+现在，一些开发者更喜欢继续使用 .jsx 扩展，以明确哪些文件实际上包含 JSX。如果你愿意，你完全可以这样做！无论哪种方法都可以。👍
+
+</Callout>
+
+## 跳过 React 导入？
+
+让我们再次看看这段代码：
+
+```jsx
+import React from "react";
+import { createRoot } from "react-dom/client";
+
+const element = <p id="hello">Hello World!</p>;
+
+const container = document.querySelector("#root");
+const root = createRoot(container);
+root.render(element);
+```
+
+在第一行，我们导入了 React ，但实际上并没有在任何地方使用它……是吗？我们可以省略它吗？
+
+事实上，我们正在使用 React 导入！让我们来拆解一下这里发生了什么。
+
+在我们编译掉 JSX 之后，剩下的代码是：
+
+```js
+import React from "react";
+import { createRoot } from "react-dom/client";
+
+// [!code highlight]
+const element = React.createElement(
+  // [!code highlight]
+  "p",
+  // [!code highlight]
+  { id: "hello" },
+  // [!code highlight]
+  "Hello World!",
+  // [!code highlight]
+);
+
+const container = document.querySelector("#root");
+const root = createRoot(container);
+root.render(element);
+```
+
+当 JSX 被编译成普通 JS 时，依赖关系变得清晰。那个 \<p> 标签变成了一个 React.createElement 调用！它被 JSX 模糊化了吗？
+
+在早期版本的 React 中，如果你忘记包含 React 导入，系统会显示错误：`Error: React is not defined`
+
+这个错误信息给初学者带来了很多困惑。大多数教程都略过了 JSX 的实际工作原理。因此，如果你不理解 \<p> 变成了 React.createElement('p') ，你就无法理解这个错误信息的含义，也不知道如何修复它。😬
+
+这对初学者来说是一个非常常见的障碍，因此 React 团队决定花一些时间看看他们如何改善这一状况。他们提出了一个相当聪明的解决方案！
+
+随着 React 17 的发布，React 团队引入了一种新的“JSX 转换器”，由 Babel 和其他编译器使用。基本上，它在构建过程中自动注入导入。
+
+例如，假设我们有这段代码：
+
+```jsx
+const element = <p id="hello">Hello World!</p>;
+```
+
+使用现代 JSX 转换器，它将被编译为：
+
+```js
+import { jsx as _jsx } from "react/jsx-runtime";
+
+const element = _jsx("p", { id: "hello" }, "Hello World!");
+```
+
+请注意，我们的原始代码没有包含那个导入语句。它是由编译器自动包含的。
+
+\_jsx 是 React.createElement 的一个豪华优化版本。当我们使用某些 React 特性时，例如 Fragments 或 Portals，它包含一些快捷方式。否则，它的功能与 React.createElement 完全相同：它创建一个 React 元素。
+
+因此，如今我们不需要导入 React。JSX 编译器会为我们解决这个问题。
+
+不过，就我个人而言，每当我使用 JSX 时，仍然继续导入 React。部分原因是旧习惯很难改变，部分原因是我们仍然需要导入 React 才能使用许多 React 特性，比如钩子（在模块 2 和模块 3 中有详细介绍）。通过始终导入 React，我知道在需要时它会在那里。

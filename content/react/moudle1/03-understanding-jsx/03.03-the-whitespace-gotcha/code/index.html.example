@@ -1,0 +1,21 @@
+<style>
+  img {
+    height: 75px;
+    border: 1px solid;
+  }
+</style>
+
+<div>
+  <img
+    alt=""
+    src="https://sandpack-bundler.vercel.app/img/architecture-christian-perner.jpg"
+  />
+  <img
+    alt=""
+    src="https://sandpack-bundler.vercel.app/img/architecture-grant-lemons.jpg"
+  />
+  <img
+    alt=""
+    src="https://sandpack-bundler.vercel.app/img/architecture-hugo-sousa.jpg"
+  />
+</div>

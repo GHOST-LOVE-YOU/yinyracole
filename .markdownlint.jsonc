@@ -1,0 +1,16 @@
+{
+  // 禁用内联 HTML 警告
+  "MD033": false,
+
+  // 禁用行尾空格警告
+  "MD009": false,
+
+  // 禁用多个空行警告
+  "MD012": false,
+
+  "MD037": false,
+
+  "MD013": false,
+
+  "MD046": false,
+}
