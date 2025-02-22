@@ -1,0 +1,62 @@
+.App {
+  font-family: sans-serif;
+  text-align: center;
+}
+
+.wrapper {
+  padding: 20px;
+  min-height: 100vh;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+}
+
+.type {
+  margin: 0 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: bold;
+}
+
+.keyboard {
+  background-color: #e9ecef;
+  color: #495057;
+}
+
+.mouse {
+  background-color: #e3f2fd;
+  color: #1976d2;
+}
+
+.focus {
+  background-color: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.touch {
+  background-color: #fce4ec;
+  color: #c2185b;
+}
+
+.buttons {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+button, input {
+  padding: 8px 16px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: white;
+}
+
+input {
+  min-width: 200px;
+}

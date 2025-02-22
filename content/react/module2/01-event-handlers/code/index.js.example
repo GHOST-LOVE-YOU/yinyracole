@@ -1,0 +1,16 @@
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
+import "./styles.css";
+import App from "./App";
+
+const rootElement = document.getElementById("root");
+const root = createRoot(rootElement);
+
+// 添加一些内容使页面可滚动
+root.render(
+  <StrictMode>
+    <div>
+      <App />
+    </div>
+  </StrictMode>
+);

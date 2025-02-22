@@ -1,6 +1,7 @@
 {
-  "title": "Module 1",
+  "title": "Module 1 | React 基础知识",
   "pages": [
+    "index",
     "01-about-react-19/index",
     "02-hello-react",
     "03-understanding-jsx",

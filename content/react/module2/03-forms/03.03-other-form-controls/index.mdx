@@ -1,0 +1,125 @@
+---
+title: 其他表单控件
+description: 其他表单控件
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import secondAppJsCode from "./code/second/App.js.example";
+
+除了我们迄今为止使用的文本输入，网页平台提供了许多额外的表单控件。它们包括：
+
+- Textareas 文本区域
+- Radio buttons 单选按钮
+- Checkboxes 复选框
+- Selects 选择
+- Ranges 范围
+- Color pickers 颜色选择器
+
+如果你曾经在 React 之外使用这些表单控件，你可能会对它们之间的差异感到惊讶/沮丧。
+
+例如，文本区域将当前值定义为子项，而不是使用 value 属性：
+
+```jsx
+<textarea>This is the current value</textarea>
+```
+
+作为另一个例子，select 标签在 \<option> 子元素之一上使用 selected 属性来表示所选值：
+
+```jsx
+<select>
+  <option value="a">Option 1</option>
+  <option value="b" selected>
+    Option 2
+  </option>
+  <option value="c">Option 3</option>
+</select>
+```
+
+好消息是：React 对这些表单控件进行了调整，使它们的行为更为相似。在 React 中，表单控件的混乱减少了很多。
+
+本质上，所有表单控件遵循相同的模式：
+
+1. 当前值被锁定，使用的是 value （用于大多数输入）或 checked （用于复选框和单选按钮）。
+2. 我们通过 onChange 事件监听器对变化做出响应。
+
+在本课中，我们将讨论几个常见的例子。您还会在本模块的末尾找到一张额外的备忘单，提供所有表单控件的快速参考！
+
+<Callout title="快速术语澄清" type="warn">
+
+在“数据绑定”课程中，我们学习了“受控输入”。在这种情况下，输入一词不仅指 \<input> HTML 元素，还指任何表单控件，包括 \<textarea> 、 \<select> 等。
+
+实际上，当我谈到“输入”时，您通常可以假设我指的是任何接受用户输入的表单元素。如果我具体指的是 \<input> 标签，我会说“文本输入”。
+
+</Callout>
+
+## Select标签
+
+\<select> 标签允许用户从预定义选项列表中选择一个选项。<abbr title="从技术上讲，select 标签也支持多选功能，但用户体验相当差。对于多选功能，我建议使用一组复选框（checkboxes）来代替。">\*</abbr>
+
+在 React 中使用 select 标签时，它们的工作方式与文本输入基本相同。我们使用 value 和 onChange 。以下是一个示例：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+  }}
+  template="react"
+/>
+
+通过设置 value 属性，我们将其变为一个受控组件，将选定的选项绑定到我们的 React 状态。当我们添加 onChange 事件监听器时，我们允许通过从列表中选择不同的选项来更改该状态。
+
+老实说，这对我来说感觉是一个巨大的改进，与这个表单控件的默认功能相比。我们不必再为其中一个 \<option> 子元素添加 selected 属性而烦恼；相反，我们使用我们熟悉并喜欢的相同模式。
+
+## 单选按钮
+
+好的，单选按钮稍微复杂一些。
+
+表面上，它们与 \<select> 标签的目的相同；它们允许用户从一组选项中选择 1 个选项。
+
+不过棘手的是，这个状态分散在多个独立的 HTML 元素中。只有一个 \<select> 标签，但有多个 \<input type="radio"> 按钮！
+
+让我们先来看一个在 React 中受控单选按钮组的示例：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+  }}
+  template="react"
+/>
+
+哇，这么多属性！让我们逐一查看。
+
+name — 浏览器需要知道每个按钮是同一组的一部分，以便选中一个选项时会取消选中其他选项。这是通过 name 属性实现的。组中的每个单选按钮应该共享相同的 name 。
+
+value — 每个单选按钮都有自己的值。当选项被选中时，这个属性将被复制到我们的 React 状态中。这是每个单选按钮的定义/含义。
+
+id — 像其他表单控件一样，这个是必要的，以便将 \<label> 与正确的输入关联，以便点击标签时聚焦输入。
+
+checked — 这是将给定单选按钮绑定到我们 React 状态的属性，使其成为受控值。它应该被设置为布尔值： true 如果被选中， false 如果没有。一次只能有一个单选按钮设置为 true 。
+
+尽管它看起来相当不同，但确实遵循相同的大致公式。我们使用一个 onChange 事件监听器来检测何时选中给定选项。当发生这种情况时，我们更新 React 状态。
+
+对于大多数其他输入，我们将 React 状态绑定到 value 属性。不过在这种情况下，我们没有单个 value 属性可以绑定，因为我们有多个单选按钮。因此，我们改为绑定到 checked ，使用 React 状态控制组中每个按钮的选中/未选中状态。
+
+<Callout title="单选按钮还是下拉选择？">
+
+单选按钮和 \<select> 标签用于相同的目的：让用户从可能选项列表中选择一个值。那么在任何特定情况下，我们应该使用哪一个呢？
+
+<Accordions>
+
+<Accordion title="展开查看更多">
+
+这方面没有严格的规则，但以下是我遵循的一些指南：
+
+- 如果有很多选择，比如世界上每个国家的列表，使用一个 \<select> 是有意义的，这样我们可以“收起”这些选项，而不是让屏幕上充满可能性。
+- 如果您希望用户在决定之前阅读每个可能的选项（例如，选择适当的隐私控制），请使用单选按钮。人们往往对单选按钮更加认真。
+- 如果默认选项适合大多数用户， \<select> 输入可以帮助用户顺利填写表单。
+
+如果你仍然对在特定情况下哪个输入选项是正确的感到不确定，可以查看这篇博客文章：[使用单选按钮与下拉菜单的 7 条规则](https://blog.prototypr.io/7-rules-of-using-radio-buttons-vs-drop-down-menus-fddf50d312d1)。
+
+</Accordion>
+
+</Accordions>
+
+</Callout>
+
+还有很多其他表单控件，但 React 确保它们都遵循相同的约定。有关完整参考，请查看模块末尾的额外备忘单。

@@ -1,0 +1,9 @@
+import React from "react";
+
+import EventsLog from "./EventsLog";
+
+function App() {
+  return <EventsLog />;
+}
+
+export default App;

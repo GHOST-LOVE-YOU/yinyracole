@@ -1,0 +1,157 @@
+---
+title: 异步更新
+description: 异步更新
+---
+
+import AppJsCode from "./code/App.js.example";
+import stylesCssCode from "./code/styles.css.example";
+
+好的，是时候来讨论我们第一个基于状态的失误(footgun)了吗<abbr title="footgun是一个库/框架的组成部分，往往会给开发者带来问题，因为他们在尝试使用它时不小心自伤！">？</abbr>！
+
+考虑以下代码。当用户第一次点击按钮时，您期望在开发者控制台看到什么值？
+
+```jsx
+function App() {
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <>
+      <p>You've clicked {count} times.</p>
+      <button
+        onClick={() => {
+          setCount(count + 1);
+
+          console.log(count);
+        }}
+      >
+        Click me!
+      </button>
+    </>
+  );
+}
+```
+
+答案是0, 挺奇怪的，对吧？
+
+当我们创建状态变量时，我们将其初始化为 0 。然后，当我们点击按钮时，我们将其增加 1，变为 1 。那么它不应该记录 1 吗，而不是 0 ？
+
+问题在于：状态设置器不是即时的。
+
+当我们调用 setCount 时，我们告诉 React 我们希望请求对状态变量的更改。React 并不会立即中断一切；它会等到当前操作完成（处理点击）后，再更新值并触发重新渲染。
+
+目前，重要的是要知道更新状态变量是异步的。它影响下一个渲染时的状态。它是一个计划的更新。
+
+这是修复代码的方法，以便我们可以立即访问更高的值：
+
+```jsx
+function App() {
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <>
+      <p>You've clicked {count} times.</p>
+      <button
+        onClick={() => {
+          // [!code highlight]
+          const nextCount = count + 1;
+          // [!code highlight]
+          setCount(nextCount);
+          // [!code highlight]
+
+          // [!code highlight]
+          console.log(nextCount);
+        }}
+      >
+        Click me!
+      </button>
+    </>
+  );
+}
+```
+
+我们不是直接将该表达式传递给状态设置函数 setCount(count + 1) ，而是通过将其存储在一个变量中来“保存”它。然后，我们可以在我们的 console.log 语句中使用该变量，或者在这个 onClick 处理程序的其他任何地方使用它。
+
+我喜欢使用前缀“next”，像 nextCount 或 nextUser ，因为它传达了我们在谈论状态的未来值，即在下次渲染时它将会是什么。最终，这只是我个人的偏好。你可以随便给这些变量命名。
+
+## 为什么会这样工作？
+
+考虑到这是一个如此常见的障碍，值得问一下为什么它是这样设置的。如果 React 立即更新状态变量不是更简单吗？
+
+让我们谈谈这个。
+
+<Accordions>
+<Accordion title="视频摘要">
+
+在这个视频中，我们深入探讨了在处理多个状态变量时 React 是如何工作的。
+
+这是代码：
+
+```jsx
+import React from "react";
+
+function App() {
+  const [user, setUser] = React.useState({ name: "Alyssa" });
+  const [status, setStatus] = React.useState("ready");
+  const [confirmationMessage, setConfirmationMessage] = React.useState();
+
+  if (!user) {
+    return <p>{confirmationMessage}</p>;
+  }
+
+  return (
+    <button
+      onClick={() => {
+        setUser(null);
+        setStatus("initial");
+        setConfirmationMessage("You have been logged out.");
+      }}
+    >
+      Log Out
+    </button>
+  );
+}
+
+export default App;
+```
+
+当用户点击大“注销”按钮时，发生的事情如下：
+
+1. `setUser` 函数被调用了。React 会记下这一点，给自己分配一个形象比喻上的 Jira<abbr title="Jira, 一个广泛使用的票务服务，开发团队用来跟踪工作">\*</abbr> 工单。`user` 将被更改为 null。
+2. 然后，在下一行， `setStatus` 被调用。React 编辑了 Jira 工单，指出在下一个渲染中，两个状态变量必须更改。
+3. 最后， `setConfirmationMessage` 被调用。React 再次编辑了票据。它现在知道所有 3 个状态变量的新值。
+
+一旦这个 onClick 处理程序结束，React 就会开始行动，执行我们在“核心 React 循环”课程中学到的所有步骤。它调用 App 函数， user 被初始化为 null ，并返回一个段落。React 删除 \<button> DOM 节点，生成一个新的 \<p> DOM 节点，重新渲染完成。
+
+现在，让我们想象一下如果状态更新是同步的。
+
+当用户点击按钮时，点击处理程序将被调用， setUser(null) 将运行。React 会立即重新渲染，执行我们谈到的所有步骤。它调用 App 函数，获取结果，销毁按钮，创建一个段落。
+
+只有在所有这些之后，它才会恢复在 onClick 处理程序中所做的事情。然后，立即为 status 变量触发另一次重新渲染。然后，在所有这些之后，为 confirmationMessage 进行第三次重新渲染。
+
+我们将迫使 React 做三倍的工作，这将需要三倍的时间。因此，这将是一个性能负担。但这也会导致不一致/破损的用户界面！
+
+例如：如果在第一次 setUser 调用后进行了重新渲染，则 user 的值将是 null ，但是 confirmationMessage 的值仍然是未定义，因为我们还没有到达那里！结果，我们将得到以下 JSX：
+
+```jsx
+<p>{undefined}</p>
+```
+
+由于状态更新是异步的，因此可以进行批处理。React 调度更新，以便在当前工作完成后尽快进行（实际上，这通常在一两毫秒内，因此感觉完全是瞬时的）。
+
+因此，尽管这确实会造成很多困惑，尤其是对于初学者，我认为 React 团队做出了正确的决定。
+
+</Accordion>
+</Accordions>
+
+这是视频中的沙盒：
+
+<Sandpack
+  files={{
+    "App.js": AppJsCode,
+    "styles.css": {
+      code: stylesCssCode,
+      hidden: true,
+    },
+  }}
+  template="react"
+/>

@@ -1,0 +1,220 @@
+---
+title: 变异错误
+description: 变异错误
+---
+
+import AppJsCode from "./code/App.js.example";
+import stylesCssCode from "./code/styles.css.example";
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+在这个视频中，我们分解了我“渐变生成器”工具的一个最小复现：
+
+![gradient-generator-repro](/react/gradient-generator-repro.png)
+
+不幸的是，我们开始的代码无法正常工作。我们可以更改颜色，但渐变不会更新。
+
+这里是代码：
+
+```jsx
+function App() {
+  const [colors, setColors] = React.useState(["#FFD500", "#FF0040"]);
+
+  const colorStops = colors.join(", ");
+  const backgroundImage = `linear-gradient(${colorStops})`;
+
+  return (
+    <>
+      <div
+        className="gradient-preview"
+        style={{
+          backgroundImage,
+        }}
+      />
+
+      <form>
+        {colors.map((color, index) => {
+          const colorId = `color-${index}`;
+
+          return (
+            <div key={colorId} className="color-row">
+              <label htmlFor={colorId}>Color {index + 1}:</label>
+              <input
+                id={colorId}
+                type="color"
+                value={color}
+                onChange={(event) => {
+                  colors[index] = event.target.value;
+
+                  setColors(colors);
+                }}
+              />
+            </div>
+          );
+        })}
+      </form>
+    </>
+  );
+}
+```
+
+问题是我们正在修改 colors 数组。
+
+视频接着切换到一个终端，在那里我讲解了赋值和变异之间的区别。很难总结视频中的解释，但我在 JavaScript 入门课程中提供了一个替代的文本解释，赋值与变异👀。
+
+解决此问题的方法是更新我们的 onChange 函数，以便我们始终生成一个新数组：
+
+```jsx
+<input
+  id={colorId}
+  type="color"
+  value={color}
+  onChange={(event) => {
+    // [!code highlight]
+    const nextColors = [...colors];
+    // [!code highlight]
+    nextColors[index] = event.target.value;
+    // [!code highlight]
+
+    // [!code highlight]
+    setColors(nextColors);
+  }}
+/>
+```
+
+</Accordion>
+
+</Accordions>
+
+参考文献：
+
+- “Rest / Spread” JavaScript 入门课程 👀
+- “赋值与变异” JavaScript 入门课程 👀
+
+视频中的初始代码：
+
+<Sandpack
+  files={{
+    "App.js": AppJsCode,
+    "styles.css": stylesCssCode,
+  }}
+  template="react"
+/>
+
+<Callout type="warn" title="棘手的问题">
+
+在这个视频中，我们讨论了一些相当棘手的高级主题，涉及突变和对象引用。如果你之前没有接触过这些概念，这个视频可能会让你感到相当不知所措！
+
+如果你感到迷茫，可以查看 Dave Ceddia 的这篇博客文章：《[JavaScript 中的引用视觉指南](https://daveceddia.com/javascript-references/)》。这是对这些想法的精彩探索，希望能帮助你阐明许多问题！
+
+如果你仍然感到困惑，请不要太担心。在本课程的后面，我们将学习一个名为 Immer 的工具。使用 Immer 时，我们实际上不需要担心这些，因为 Immer 使得意外修改对象和数组变得不可能。
+
+</Callout>
+
+## 永远不要改变 React 状态（即使看起来可以工作）
+
+在上述解决方案中，运算顺序是：
+
+1. 创建一个新数组
+2. 修改该新数组
+3. 将新数组设置到状态中
+
+你可能在想：先翻转前两个步骤的顺序可以吗？如果我们先修改数组，再克隆它呢？像这样：
+
+```jsx
+<input
+  onChange={(event) => {
+    // Mutate the array:
+    colors[index] = event.target.value;
+
+    // Create a new copy, and set it into state:
+    setColors([...colors]);
+  }}
+/>
+```
+
+似乎简单多了，对吧？我们可以进行任何修改，然后在调用 setColors 之前复制数组，这样我们就提供了一个新值。如果你在上面的沙盒中尝试这个，它似乎有效？
+
+这里的问题是：以这种方式操作，我们正在修改保存在 React 状态中的值。React 实际上并不希望我们这样做，并且没有任何保护机制来警告我们如果尝试这样做。
+
+你可能偶尔这样做一次可以逃脱，但如果你养成这个习惯，你可能会开始遭遇奇怪或故障的行为。也许页面的某个随机部分不会在应该更新时更新。或者 DOM 结构可能会被打乱，将一个元素传送到一个完全不同的 DOM 容器中。
+
+这些错误真的很难诊断和修复。如果你尽力避免改变 React 状态，就能省下很多麻烦。
+
+## 但这不是低效的吗？
+
+一些学生问：在每次变化时创建全新的数组不效率吗？直接修改现有数组不更有效吗？
+
+当涉及到 React 状态时，别无选择；每当状态改变时，我们需要生成一个新数组。
+
+幸运的是，这并不是一个问题。克隆一个数组是一个非常快速的操作。
+
+我决定计时，看看实际需要多长时间：
+
+```jsx
+<input
+  id={colorId}
+  type="color"
+  value={color}
+  onChange={(event) => {
+    // [!code highlight]
+    console.time("perf-check");
+
+    const nextColors = [...colors];
+    nextColors[index] = event.target.value;
+
+    //[!code highlight]
+    console.timeEnd("perf-check");
+
+    setColors(nextColors);
+  }}
+/>
+```
+
+console.time 是内置于浏览器中的一个工具，它允许我们测量从初始 console.time 调用到 console.timeEnd 调用之间经过的时间。我们传递的值 ( 'perf-check' ) 是我们为这个特定计时器提供的名称（这使我们能够同时运行多个计时器）。
+
+结果是什么？当我在我的 Macbook Pro 上测试这段代码时，它大约需要 0.02 毫秒（1/50,000 秒）。
+
+让我们把事情搞得更糟。如果我们把同样的工作做一千遍呢？
+
+```jsx
+<input
+  id={colorId}
+  type="color"
+  value={color}
+  onChange={(event) => {
+    console.time("perf-check");
+
+    // [!code highlight]
+    let nextColors;
+    // [!code highlight]
+    for (let i = 0; i < 1000; i++) {
+      // [!code highlight]
+      nextColors = [...colors];
+      // [!code highlight]
+      nextColors[index] = event.target.value;
+      // [!code highlight]
+    }
+
+    console.timeEnd("perf-check");
+
+    setColors(nextColors);
+  }}
+/>
+```
+
+这项工作耗时介于 0.2 毫秒和 0.3 毫秒之间。它并不是慢了 1000 倍，可能是因为浏览器有办法优化这种工作。
+
+等一下：我的昂贵苹果笔记本电脑比普通电脑强大得多。那么它在低端硬件上的表现如何？
+
+我在我的 Acer NX TravelMate 笔记本电脑上重复了测试，这是一款 Intel Celeron 设备，购入时价格不到 150 美元，几年前买的。在这台机器上，这项工作大约需要 2 毫秒。
+
+为了让这些数字更具可比性，普通人眨眼的时间大约是 100 毫秒。如果某件事情花费的时间少于 100 毫秒，我们一般会将其视为瞬间。因此，即使我们完成的工作是实际所需工作的 1000 倍，我们仍然远未达到可感知的时间量。
+
+公正地说，这确实取决于数组的大小。如果数组中有一百万个项目，那可能就另当别论了。但我们通常在前端不处理如此庞大的数据集，因为传输这么多数据到网络上需要太长时间，并且低端设备也没有足够的内存来存储所有数据。迭代速度在前端很少是限制因素。
+
+用这些东西测试我们的直觉是个好主意。如果你发现自己在想一段代码是否慢，给它做个快速测试，亲自看看吧！
+
+我做过很多这种测试，我真的开始欣赏现代 JS 引擎是多么⚡️快速⚡️，即使在低端设备上也是如此。谈到前端性能，我们还有更重要的事情需要关注，而不是这些内容。我们将在本课程的后面更多地讨论性能。

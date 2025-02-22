@@ -1,0 +1,224 @@
+---
+title: useState 钩子
+description: useState 钩子
+---
+
+import AppJsCode from "./code/App.js.example";
+import indexJsCode from "./code/index.js.example";
+import resetCssCode from "./code/reset.css.example";
+import stylesCssCode from "./code/styles.css.example";
+
+让我们先来看一个常见的例子，一个最小的“计数器”演示。
+
+点击按钮，观察计数增加：
+
+<Sandpack
+  files={{
+    "App.js": AppJsCode,
+    "index.js": {
+      code: indexJsCode,
+      hidden: true,
+    },
+    "reset.css": {
+      code: resetCssCode,
+      hidden: true,
+    },
+    "styles.css": {
+      code: stylesCssCode,
+      hidden: true,
+    },
+  }}
+  template="react"
+/>
+
+这里发生了很多事情，所以我们来逐一解析。
+
+我们的目标是记录用户点击按钮的次数。每当我们有这样的“动态”值时，我们需要使用 React 状态。状态用于随时间变化的值。
+
+要创建一个状态变量，我们使用 useState 函数。该函数接受一个参数：初始值。在这种情况下，该值初始化为 0 。选择这个值是因为当页面首次加载时，我们点击按钮的次数为 0。
+
+useState 是一个钩子。钩子是一种特殊类型的函数，允许我们“钩入” React 内部。我们将在本课程的后面学习更多关于钩子的内容。
+
+useState 钩子返回一个包含两个项的数组：
+
+1. 状态变量的当前值。我们决定将其称为 count 。
+2. 我们可以用来更新状态变量的函数。我们将其命名为 setCount 。
+
+<Callout title="解构赋值">
+
+如果你不熟悉数组解构，这种语法对你来说可能看起来有点疯狂！
+
+为了帮助你理解发生了什么，这里是相同的逻辑，但没有使用解构赋值：
+
+```jsx
+const countArray = React.useState(0);
+
+const count = countArray[0];
+const setCount = countArray[1];
+```
+
+您可以在 JavaScript Primer 参考模块的“数组解构”课程中了解更多内容 👀。
+
+</Callout>
+
+## 命名约定
+
+当我们创建一个状态变量时，我们可以随意命名这两个变量。例如，这同样有效：
+
+```jsx
+const [hello, world] = React.useState(0);
+```
+
+也就是说，遵循“x, setX”惯例是很常见的：
+
+```jsx
+const [user, setUser] = React.useState();
+const [errorMessage, setErrorMessage] = React.useState();
+const [flowerBouquet, setFlowerBouquet] = React.useState();
+```
+
+第一个解构变量是我们正在跟踪的事物的名称。第二个变量在该名称前加上 set ，表示这是一个可以调用以更改该事物的函数。这有时被称为“设置函数”，因为它设置了状态变量的新值。
+
+<Callout title="导入钩子？">
+
+一些 React 教程以稍微不同的方式编写这种代码：
+
+```jsx
+//[!code highlight]
+import React, { useState } from "react";
+
+function App() {
+  // [!code highlight]
+  const [num, setNum] = useState(0);
+
+  return <div>{num}</div>;
+}
+```
+
+我们不是在写 React.useState ，而是在文件顶部导入 useState 函数并单独使用它， useState 。
+
+底线是：这些方法是完全相等的，任一方法都可以正常工作。
+
+就我个人而言，我不想麻烦地处理导入。这对我来说是一个小干扰，我宁愿每次多写几个字符。但这完全是个人偏好，你可以根据自己的意愿来处理。
+
+</Callout>
+
+## 初始值
+
+React 状态变量可以被赋予初始值：
+
+```jsx
+const [count, setCount] = React.useState(1);
+console.log(count); // 1
+```
+
+我们还可以提供一个函数。React 将在第一次渲染时调用此函数以计算初始值：
+
+```jsx
+const [count, setCount] = React.useState(() => {
+  return 1 + 1;
+});
+
+console.log(count); // 2
+```
+
+这有时被称为初始化函数。如果我们需要进行昂贵的操作来计算初始值，这在某些情况下可能会很有用。例如，从本地存储读取：
+
+```jsx
+const [count, setCount] = React.useState(() => {
+  return window.localStorage.getItem("saved-count");
+});
+```
+
+如果您不熟悉本地存储 API，它是一种让我们在用户设备上保存值的方法，这样即使浏览器标签页关闭后，这些值也会持续存在，并且可以在用户下次访问时访问。
+
+这里的好处是我们只在初始渲染时进行一次昂贵的工作（从本地存储读取），而不是在每次渲染时都进行。
+
+在本课程稍后我们将看到一个完整的示例，如何将 React 状态持久化到本地存储。
+
+<Callout title="等一下…什么？">
+
+几个学生好奇为什么这种“次要形式”会有所不同。在任何情况下我们不都是只计算一次吗？
+
+这两种形式之间究竟有什么区别？
+
+```jsx
+// Form 1:
+const [count, setCount] = React.useState(
+  window.localStorage.getItem("saved-count"),
+);
+
+// Form 2:
+const [count, setCount] = React.useState(() => {
+  return window.localStorage.getItem("saved-count");
+});
+```
+
+<Accordions>
+<Accordion title="展开查看更多">
+      
+我认为这是一个可以忘记所有关于 React 的情况，把它视为普通的 JavaScript 的情况。
+
+假设我们有这个函数：
+
+```jsx
+function run() {
+  console.log("Hello");
+}
+```
+
+每当我调用 run 函数时，我们将记录单词“Hello”。如果我调用该函数 5 次，我将在控制台得到 5 个“Hello”。
+
+现在，假设我们对它进行一些调整：
+
+```jsx
+function run() {
+  const sayHi = () => {
+    console.log("Hello");
+  };
+}
+```
+
+现在，当我调用 run 函数时，控制台没有记录任何内容。这是因为 console.log 被包装在一个内部函数 sayHi 中。每次我们调用 run 函数时，都会创建一个全新的 sayHi 函数，但我们从未调用它。
+
+好的，现在我们再来看看 React 代码：
+
+```jsx
+function Counter() {
+  const [count, setCount] = React.useState(
+    window.localStorage.getItem("saved-count"),
+  );
+}
+```
+
+每当我们渲染 Counter 组件时，该函数将被调用，内部的所有代码都会运行。我们将在每次渲染时调用 window.localStorage ，并将值传递给 React.useState 。
+
+现在，让我们考虑次要形式：
+
+```jsx
+function Counter() {
+  const [count, setCount] = React.useState(() => {
+    return window.localStorage.getItem("saved-count");
+  });
+}
+```
+
+在这种情况下，我们正在创建一个函数：
+
+```jsx
+() => {
+  return window.localStorage.getItem("saved-count");
+};
+```
+
+这个函数被传递到 React.useState() 中。因此，决定如何处理它的权利在于 React。
+
+在第一次渲染时，React 会调用此函数来计算初始值。然而，在随后的渲染中，React 会忽略该函数。初始值已经被计算过了，因此没有理由再次调用该函数。
+
+---
+
+我意识到这些东西很复杂，特别是如果你对 JavaScript 还不够熟悉的话😅。不过，幸运的是，这不是你现在需要理解的内容。我怀疑随着你在 JavaScript 中处理函数的经验增加，这一切会变得清晰。
+
+</Accordion>
+</Accordions>
+</Callout>

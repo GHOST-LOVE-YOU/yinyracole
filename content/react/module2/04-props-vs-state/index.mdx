@@ -1,0 +1,122 @@
+---
+title: 属性与状态
+description: 属性与状态
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstButtonJsCode from "./code/first/Button.js.example";
+import firstButtonModuleCssCode from "./code/first/Button.module.css.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+
+import secondAppJsCode from "./code/second/App.js.example";
+import secondButtonJsCode from "./code/second/Button.js.example";
+import secondButtonModuleCssCode from "./code/second/Button.module.css.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+在学习 React 时，“props”和“state”的概念有些混淆是很正常的。它们之间究竟有什么区别？什么时候使用 props，什么时候使用 state？
+
+在本课中，我们的目标是澄清这个常见的混淆来源。
+
+## 属性
+
+“Props” 是 “properties” 的缩写。在微观层面上，它们就像我们在 HTML 元素上放置的属性，如 class 或 href :
+
+```jsx
+<a
+  class="nav-link"
+  href="/category/stuff"
+>
+```
+
+例如，下面的 Button 组件接受一个“variant”属性。这个属性将被内部使用来控制样式，类似于 HTML 中 class 属性的工作方式。
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "Button.js": firstButtonJsCode,
+    "Button.module.css": firstButtonModuleCssCode,
+    "styles.css": {
+      code: firstStylesCssCode,
+      hidden: true,
+    },
+  }}
+  template="react"
+/>
+
+Props 允许我们自定义给定组件的行为，以便在不同场景中相同的组件可以执行不同的操作。
+
+Props 是我们组件的输入，就像传递给函数的参数。
+
+## 状态
+
+在上面的示例中，我们的应用程序是完全静态的。每次运行这些代码，我们都会得到相同的结果。直到宇宙的热寂，这种情况将一直保持。
+
+但是如果我们想要一些东西随时间变化呢？这就是状态的作用。
+
+让我们稍微调整一下我们的例子：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "Button.js": secondButtonJsCode,
+    "Button.module.css": secondButtonModuleCssCode,
+    "styles.css": {
+      code: secondStylesCssCode,
+      hidden: true,
+    },
+  }}
+  template="react"
+/>
+
+我们有一个新的状态， hasAgreed ，我们需要使用这些数据来驱动我们的“确认”按钮。这揭示了关于 props 的一个重要真相：它们是允许数据在我们的应用程序中流动的通道。
+
+让我们深入探讨这个想法。
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+React 状态用于跟踪随时间变化的数据。在这种情况下， hasAgreed 可以在用户切换复选框时在 true/false 之间切换。
+
+默认情况下，状态只对当前组件可用。我们的 Button.js 组件无法访问 hasAgreed 状态变量。状态不是全局的。
+
+Props 使我们能够将数据从一个组件传递到另一个组件。你可以把它想象成我们数据的州际公路系统，或者像一个数据可以流经的隧道网络。
+
+我们可以通过 props 传递静态值（字符串、数字、布尔值），或者我们可以传递动态状态变量。这对 React 来说没有区别。
+
+</Accordion>
+
+</Accordions>
+
+<Callout title="想出正确的props名">
+
+我可以选择将我的 prop 命名为 disabled ，而不是编造一个 isEnabled prop，像这样：
+
+```jsx
+// [!code highlight="1"]
+function Button({ variant, disabled, children }) {
+  return (
+    <button
+      className={`${styles.wrapper} ${styles[variant]}`}
+      // [!code highlight]
+      disabled={disabled}
+    >
+      {children}
+    </button>
+  );
+}
+```
+
+实际上，这就是我在现实世界中可能会这样做的方式，但在这个例子中我选择了 isEnabled 来避免出现两个事物——我们的自定义属性和 HTML 属性——都叫做 disabled 的模糊性。
+
+</Callout>
+
+<Callout type="warn" title="不要disable按钮">
+
+在这个例子中，我使用 disabled 属性禁用了一个按钮。结果表明，这个属性对可用性不好。
+
+禁用的按钮不会向用户反馈问题所在。相反，我们应该始终允许按钮被点击；如果缺少某些内容或无效，我们可以引导用户找到问题。
+
+有关更多信息，请查看亚当·西尔弗的这篇文章：“[禁用按钮的问题及替代方法](https://adamsilver.io/blog/the-problem-with-disabled-buttons-and-what-to-do-instead/)”。
+
+</Callout>

@@ -1,0 +1,159 @@
+import React from "react";
+
+function EventsLog() {
+  const [logs, setLogs] = React.useState([]);
+
+  const MAX_LOGS = 15;
+
+  const logIndex = React.useRef(0);
+
+  const addLog = (type, newLog) => {
+    setLogs((log) => {
+      const nextLogs = [
+        {
+          index: logIndex.current,
+          type,
+          value: newLog,
+        },
+        ...log,
+      ];
+
+      logIndex.current += 1;
+
+      if (nextLogs.length > MAX_LOGS) {
+        return nextLogs.slice(0, MAX_LOGS);
+      } else {
+        return nextLogs;
+      }
+    });
+  };
+
+  React.useEffect(() => {
+    function handleScroll(ev) {
+      addLog("scroll", `User scrolled to ${window.scrollY}`);
+    }
+
+    function handleKeyDown(ev) {
+      addLog("keyboard", `User pressed key ${ev.key}`);
+    }
+    function handleKeyUp(ev) {
+      addLog("keyboard", `User released key ${ev.key}`);
+    }
+
+    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, []);
+
+  return (
+    <div
+      className="wrapper"
+      onClick={() => addLog("mouse", "User clicked")}
+      onMouseDown={() => addLog("mouse", "User depressed mouse button")}
+      onMouseUp={() => addLog("mouse", "User released mouse button")}
+      onMouseMove={(ev) =>
+        addLog(
+          "mouse",
+          "User moved mouse to [" + ev.clientX + ", " + ev.clientY + "]"
+        )
+      }
+      onDoubleClick={() => addLog("mouse", "User double-clicked")}
+      onTouchStart={() => addLog("touch", "User started touching")}
+      onTouchMove={() => addLog("touch", "User dragged finger")}
+      onTouchEnd={() => addLog("touch", "User stopped touching")}
+    >
+      <ul>
+        {logs.map(({ index, type, value }) => (
+          <li key={index}>
+            {index === 0 ? 0 : (index - 1) / 2}.
+            <span className={`type ${type} `}>{type}</span>
+            {value}
+          </li>
+        ))}
+      </ul>
+      <form
+        className="buttons"
+        onSubmit={(ev) => {
+          ev.preventDefault();
+          addLog("submit", "User submitted form");
+        }}
+      >
+        {[1, 2].map((index) => (
+          <button
+            key={index}
+            onClick={(ev) => {
+              ev.stopPropagation();
+              addLog("mouse", "User clicked button " + index);
+            }}
+            onMouseDown={(ev) => {
+              ev.stopPropagation();
+              addLog("mouse", "User started clicking button " + index);
+            }}
+            onMouseOver={(ev) => {
+              addLog("mouse", "User hovered over button " + index);
+            }}
+            onMouseLeave={(ev) => {
+              addLog("mouse", "User stopped hovering over button " + index);
+            }}
+            onMouseMove={(ev) => {
+              ev.stopPropagation();
+            }}
+            onMouseDown={(ev) => {
+              ev.stopPropagation();
+              addLog("mouse", "User finished clicking button " + index);
+            }}
+            onFocus={(ev) => {
+              addLog("focus", "User focused button " + index);
+            }}
+            onBlur={(ev) => {
+              addLog("focus", "User unfocused button " + index);
+            }}
+          >
+            Button {index}
+          </button>
+        ))}
+        <input
+          type="text"
+          onClick={(ev) => {
+            ev.stopPropagation();
+            addLog("mouse", "User clicked input");
+          }}
+          onMouseDown={(ev) => {
+            ev.stopPropagation();
+            addLog("mouse", "User started clicking input");
+          }}
+          onMouseOver={(ev) => {
+            addLog("mouse", "User hovered over input");
+          }}
+          onMouseLeave={(ev) => {
+            addLog("mouse", "User stopped hovering over input");
+          }}
+          onMouseMove={(ev) => {
+            ev.stopPropagation();
+          }}
+          onMouseDown={(ev) => {
+            ev.stopPropagation();
+            addLog("mouse", "User finished clicking input");
+          }}
+          onFocus={(ev) => {
+            addLog("focus", "User focused input");
+          }}
+          onBlur={(ev) => {
+            addLog("focus", "User unfocused input");
+          }}
+          onChange={(ev) => {
+            addLog("change", "User changed input to “" + ev.target.value + "”");
+          }}
+        />
+      </form>
+    </div>
+  );
+}
+
+export default EventsLog;

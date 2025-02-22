@@ -1,0 +1,21 @@
+html, body {
+  height: 100%;
+}
+body {
+  background: hsl(250deg 100% 96%);
+  display: grid;
+  place-content: center;
+}
+ul {
+  list-style-type: none;
+  padding: 16px;
+  margin: 0;
+  width: min(100vw, 400px);
+}
+li {
+  background: white;
+  padding: 16px;
+  margin: 8px 0px;
+  border-bottom: 2px solid hsl(250deg 100% 50% / 0.2);
+  border-radius: 2px 2px 4px 4px;
+}

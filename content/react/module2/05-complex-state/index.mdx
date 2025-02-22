@@ -1,0 +1,32 @@
+---
+title: 复杂状态
+description: 复杂状态
+---
+
+到目前为止，我们已经看到如何在 React 状态中存储数字和字符串。然而，在许多实际情况下，我们的状态会更复杂，比如一个对象或一个数组。
+
+例如：前一段时间，我制作了一个渐变生成器工具。用户可以选择 2 到 5 种颜色，我们将使用该状态生成一个渐变。
+
+<video controls loop muted playsInline width="100%">
+  <source src="/react/gradient-demo.mp4" type="video/mp4" />
+</video>
+
+你将如何跟踪颜色的状态？
+
+在我的情况下，我创建了一个 colors 状态变量。它保存了一个字符串数组：
+
+```jsx
+const [colors, setColors] = React.useState(["#FFD500", "#FF0040"]);
+```
+
+React 并不关心我们状态的类型。我们可以存储数字、字符串、数组或对象。如果我们愿意，还可以在状态中存储函数<abbr title="我们可以这样做，但总的来说，我们不应该这样做。在课程后面的部分，我们会看到 useCallback 如何帮助我们处理函数。">\*</abbr>！
+
+但有一个问题：React 状态变化必须是不可变的。当我们调用 setColors 时，我们需要提供一个全新的数组。我们绝不应该修改状态中持有的数组或对象。
+
+不可变性是 JavaScript 中的一个重要议题，我们将在接下来的课程中以及整个课程中逐步深入。
+
+<Callout title="赋值与突变">
+
+在开始这些课程之前，了解“赋值”和“变异”之间的区别很重要。有关该主题的课程可以在 JavaScript Primer 中找到。如果你还不太熟悉 JavaScript，建议在继续之前先了解一下这个内容
+
+</Callout>

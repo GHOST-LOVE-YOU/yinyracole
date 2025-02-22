@@ -1,0 +1,119 @@
+---
+title: onClick的寓言
+description: onClick的寓言
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstSearchFormJsCode from "./code/first/SearchForm.js.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondSearchFormJsCode from "./code/second/SearchForm.js.example";
+
+我见过很多 React 开发者犯的一个错误。这节课是一个关于这个错误的警示故事。
+
+假设我们正在构建一个搜索表单：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "SearchForm.js": firstSearchFormJsCode,
+  }}
+  template="react"
+/>
+
+在这个例子中， runSearch 是我们希望在用户点击“搜索！”按钮时调用的函数。在模块 3 中，我们将学习如何进行网络请求，但现在这只是一个占位符<abbr title="某物的虚假版本，一个占位符。">?</abbr>。
+
+问题是：我应该如何使用这个函数？
+
+许多开发者本能地通过在提交按钮上添加一个 onClick 处理程序来解决这个问题：
+
+```jsx
+<button onClick={() => runSearch(searchTerm)}>Search!</button>
+```
+
+这种方法存在许多问题。例如，如果用户在文本输入框中输入内容后按下“Enter”键进行搜索怎么办？
+
+好吧……我想我们可以用一个 onKeyDown 事件监听器来解决这个问题？
+
+```jsx
+<input
+  type="text"
+  value={searchTerm}
+  onChange={(event) => {
+    setSearchTerm(event.target.value);
+  }}
+  onKeyDown={(event) => {
+    if (event.key === "Enter") {
+      runSearch(searchTerm);
+    }
+  }}
+/>
+```
+
+我们正在走一条错误的路。我们正在重新实现浏览器已经会做的事情！
+
+## 使用表单
+
+要解决这个问题，以及许多其他问题，我们应该将我们的表单控件包装在一个 \<form> 标签中。
+
+然后，我们可以监听表单提交事件，而不是监听点击和按键。
+
+看看代码变得多么简单：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "SearchForm.js": secondSearchFormJsCode,
+  }}
+  template="react"
+/>
+
+当用户点击按钮或在输入框或按钮获得焦点时按下“Enter”键时，表单提交事件将自动被调用。当该事件触发时，我们将进行搜索。
+
+与其试图重新创建一堆标准的网络平台内容，我们应该利用这个平台，让它为我们解决这些问题！
+
+通过使用表单提交事件，我们可以使用客户端验证：
+
+```jsx
+<input type="password" required={true} minLength={8} />
+```
+
+了解有关验证属性如 required 、 minLength 和 pattern 的更多信息，请访问 [MDN](https://developer.mozilla.org/en-US/docs/Learn/Forms/Form_validation)。
+
+## 默认表单行为
+
+好的，使用 onSubmit 有一个小问题。我们需要防止默认的提交行为：
+
+```jsx
+<form
+  className="search-form"
+  onSubmit={event => {
+  // [!code highlight]
+    event.preventDefault();
+    runSearch(searchTerm);
+  }}
+>
+```
+
+要理解为什么这是必要的，我们需要回到过去，回到一个没有客户端请求的时代。在 fetch 之前，在 XMLHttpRequest 之前，在 JSON 之前。
+
+如果您想向服务器发出请求，比如在获取搜索结果时，您无法仅请求数据。您需要请求一个全新的 HTML 文件。本质上，用户将被重定向到一个新的 URL，然后服务器将使用与请求一起发送的数据渲染一个模板到 HTML 文档中。
+
+表单仍然默认以这种方式操作。当您提交表单时，浏览器将尝试将用户发送到 action 属性指定的 URL：
+
+```jsx
+<!--
+  Submitting this form will redirect the user to the
+  /search page, sending along the data collected from
+  the form fields.
+-->
+<form
+  method="POST"
+  action="/search"
+>
+```
+
+如果我们省略 action 属性，浏览器将使用当前 URL，有效地重新加载页面。
+
+在现代 React 应用程序的上下文中，这通常不是我们想要的。我们不希望重新加载整个页面，而是想获取一些数据，并使用这些数据重新渲染几个组件。这会带来更快、更流畅的用户体验。
+
+这就是我们需要包含 event.preventDefault() 的原因。它可以阻止浏览器执行整个页面的重新加载。

@@ -1,0 +1,201 @@
+---
+title: 数据绑定
+description: 数据绑定
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import thirdAppJsCode from "./code/third/App.js.example";
+
+在构建 web 应用程序时，我们通常希望将一些状态同步到特定的表单输入中。例如，“用户名”字段应绑定到 username 状态变量的值。
+
+这通常被称为“数据绑定”。大多数前端框架提供了一种将特定状态绑定到特定表单控件的方法。
+
+在 React 中，这通常看起来是这样的：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+  }}
+  template="react"
+/>
+
+如果你愿意，花几分钟时间试试看。如果你改变或移除 value 或 onChange 属性会发生什么？
+
+我们来深入了解一下：
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+value 属性在 React 中的工作方式与在 HTML 中不同。
+
+在 HTML 中， value 设置默认值，并可以编辑
+
+在 React 中， value 将输入锁定为指定值，并且变为只读。
+
+通过将 value 设为我们的 searchTerm 状态变量，我们确保输入始终显示搜索词。
+
+让我们添加一个按钮，将搜索词设置为随机数。我们看到，通过点击这个按钮，输入将更新以显示这个新值。
+
+本质上，我们的数据绑定完成了 50%。输入将始终显示 searchTerm 状态的值，即使该值被更新，但输入无法更改状态。绑定仅是单向的。
+
+当我们添加一个 onChange 处理程序时，我们会看到输入实际上会短暂更新以显示新值。问题是，React 会在更改事件触发后立即撤消该更改，甚至在浏览器还有时间完成一次重新绘制之前。
+
+我们可以调用 setSearchTerm ，使用输入的当前值作为持久化编辑的一种方法。当 React 重新渲染时，输入将被更新为显示保存在状态中的更新值。
+
+我们真的需要 value 吗？似乎仅使用 onChange 监听器就可以工作！
+
+- 好吧，这也是单向数据绑定，但这与我们之前看到的情况正好相反。输入可以更新状态，但状态无法更新输入。如果我们点击随机数生成器按钮，状态会更新为一个新数字，但输入不会更新以显示这个新值。
+- 同样，如果我们的状态具有初始值如 cats ，我们将看不到该初始值，除非我们通过设置 value=\{searchTerm} 来控制输入。
+
+</Accordion>
+
+</Accordions>
+
+这是视频结尾的沙盒：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+  }}
+  template="react"
+/>
+
+<Callout title="合成事件">
+
+我在上面的视频中提到，React 使用一种“合成”事件系统。这些事件是由 React 创建的特殊对象，而不是在 JavaScript 中使用的标准事件。
+
+为什么 React 这样做？几个原因：
+
+- 它可以确保一致性，消除一些边缘案例问题，因为本地事件在不同浏览器之间的实现略有不同。
+- 它可以包括一些有用的“额外”内容，以改善开发者体验
+- 在早期版本中，这个事件系统对性能有轻微的积极影响，但这些更改后来已被移除。如果你在网上看到“事件池”或 event.persist() 的引用，可以忽略它们，因为这个系统在 React 17 中被移除了。
+
+如果您需要访问“真实”的事件对象，可以像这样访问它：
+
+```jsx
+<input
+  onChange={(event) => {
+    const realEvent = event.nativeEvent;
+
+    console.log(realEvent); // DOM InputEvent object
+  }}
+/>
+```
+
+如果你对事件特别感兴趣，可以通过阅读[官方的“Events”文档](https://react.dev/reference/react-dom/components/common#react-event-object)来了解更多信息。
+
+</Callout>
+
+## 受控输入与非受控输入
+
+当我们在表单输入上设置 value 属性时，我们告诉 React 这个输入应该是一个受控输入。“受控”这个词在 React 中有一个特定的定义；它意味着 React 正在管理该输入。
+
+相对而言，如果我们不设置 value ，输入就是一个不受控制的输入。这意味着 React 不进行任何管理。
+
+这里有一个金科玉律：输入应该始终是受控的或不受控的。React 不喜欢我们将一个元素从一种状态翻转到另一种。
+
+这可能导致一个常见的失误。让我们学习一下，以便我们可以避免它。
+
+考虑这种情况：
+
+<Sandpack
+  files={{
+    "App.js": thirdAppJsCode,
+  }}
+  template="react"
+  options={{
+    showConsole: true,
+    showConsoleButton: true,
+  }}
+/>
+
+尝试在文本输入中输入内容，然后切换到“控制台”选项卡。您应该会看到一个以此开头的警告：
+
+<Callout type="error">
+  警告：一个组件正在将一个不受控的输入更改为受控输入。
+</Callout>
+
+这很奇怪，对吧？这个输入是受控制的！我们从第一次渲染就设置 value=\{username} ！
+
+问题是： username 初始时是未定义的，因为状态钩子中没有默认值。这是我们所做的简化版本：
+
+```jsx
+// [!code highlight]
+const username = undefined;
+
+<input
+  type="text"
+  id="username"
+  // [!code highlight]
+  value={username}
+  onChange={(event) => {
+    setUsername(event.target.value);
+  }}
+/>;
+```
+
+当我们将 value 设置为 undefined 时，这与根本不设置它是一样的。React 会将输入视为不受控输入。当用户开始在输入框中输入时， onChange 事件将 username 的值从 undefined 更新为字符串。因此，React 将元素转换为受控输入，并抛出警告。
+
+解决问题的方法如下：我们始终希望确保传递一个定义过的 value 。我们可以通过将 username 初始化为一个空字符串来做到这一点：
+
+```jsx
+// 🚫 Incorrect. `username` will flip from `undefined` to a string:
+const [username, setUsername] = React.useState();
+
+// ✅ Correct. `username` will always be a string:
+const [username, setUsername] = React.useState("");
+```
+
+通过这个变化，我们的输入从第一帧的渲染开始就由 React 状态控制，因为我们始终传递一个定义的值。尽管空字符串被视为假值👀，但在控制 React 输入方面，它们仍然“算数”。
+
+<Callout type="warn" title="React 19 中的操作">
+
+React 19 引入了一种新的表单处理方式，称为 Actions。它的样子如下：
+
+```jsx
+function ContactForm() {
+  const [error, submitAction, isPending] = React.useActionState(
+    async (previousState, formData) => {
+      const name = formData.get("name");
+      const msg = formData.get("message");
+
+      const error = await sendMessageToServer(name, msg);
+
+      if (error) {
+        return error;
+      }
+
+      redirect("/path");
+      return null;
+    },
+    null,
+  );
+
+  return (
+    <form action={submitAction}>
+      <input type="text" name="name" />
+      <textarea type="text" name="message" />
+      <button type="submit" disabled={isPending}>
+        Update
+      </button>
+      {error && <p>{error}</p>}
+    </form>
+  );
+}
+```
+
+正如在“关于 React 19”课程中讨论的，这门课程尚未涵盖 Actions API。如果/当这个 API 被社区采纳时，我可能会向这门课程添加一些内容。但即使那种情况发生，你在这些课程中学习的内容仍然是相关的。
+
+在使用 Actions 时，我们完全不使用受控输入。没有数据绑定；相反，React 在表单提交时收集所有输入的数据。然后我们可以对这些数据进行任何需要的操作（例如，将其发送到服务器）。
+
+这种方法的主要优点是它不那么繁琐，因为我们不必为每个表单字段设置状态变量。对于字段很多的长表单，这可以节省一些时间。Actions 还包括额外的抽象，以帮助处理乐观更新（在服务器确认更改之前更改 UI）。
+
+但动作无法解决我们所有与表单相关的问题。考虑本课中的第一个例子，搜索表单。在那个例子中，我们实时显示用户的搜索词，在表单下方：
+
+![search-term-in-ui](/react/search-term-in-ui.png)
+
+使用 Actions 时，我们只能在提交时访问表单数据。如果我们想在提交表单之前对其进行处理，我们需要将其存储在状态中。因此在这种情况下，即使我们为其他表单采用 Actions，我们仍然希望使用受控输入。
+
+</Callout>

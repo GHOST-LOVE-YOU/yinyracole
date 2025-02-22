@@ -1,0 +1,82 @@
+---
+title: 指定参数
+description: 指定参数
+---
+
+这是一个难题：如果我们想为这个函数指定参数怎么办？
+
+例如，假设我们的函数名为 setTheme ，我们将使用它将用户的颜色主题从浅色模式更改为深色模式。
+
+为了让这个工作，我们需要提供我们要切换到的主题名称，如下所示：
+
+```jsx
+// Switch to light mode:
+setTheme("light");
+
+// Switch to dark mode:
+setTheme("dark");
+```
+
+不过我们该怎么做呢？
+
+如果我们将 setTheme 作为 onClick 的引用传递，就无法提供参数：
+
+```jsx
+// 🚫 Invalid: calls the function without 'dark'
+<button onClick={setTheme}>Toggle theme</button>
+```
+
+为了指定参数，我们需要将其包裹在括号中，但然后它会立即被调用：
+
+```jsx
+// 🚫 Invalid: calls the function right away
+<button onClick={setTheme("dark")}>Toggle theme</button>
+```
+
+我们可以通过一个包装函数来解决这个问题：
+
+```jsx
+// ✅ Valid:
+<button onClick={() => setTheme("dark")}>Toggle theme</button>
+```
+
+我们正在创建一个全新的匿名箭头函数， () => setTheme('dark') ，并将其传递给 React。当用户点击按钮时，该函数将运行，函数内部的代码会被执行（ setTheme('dark') ）。
+
+如果你对箭头函数不太熟悉，一定要查看一下“箭头函数”入门课程👀。
+
+如果仍然感到困惑，请不要担心：这种模式在 React 中非常常见，在本课程中你将有很多机会熟悉和适应它！
+
+<Callout type="warn" title="对性能有害？">
+
+你可能听说过像这样创建匿名函数对性能不好。
+
+在这个话题上有很多错误信息，这让我感到沮丧，因为这让开发者担心一些他们其实并不需要担心的事情。
+
+快速总结一下：
+
+- 创建匿名函数与命名函数之间没有可测量的性能差异。箭头函数与传统函数也是如此。
+- 创建新函数的成本极低。即使是低端设备也能在一瞬间创建数十万个函数。
+- React 有一个内置的事件委托系统，为我们实现了一系列优化。
+
+现在，对于 React 中函数的担忧确实有其事实依据，但 React 给了我们一个工具来管理它们。它叫做 useCallback ，我们将在模块 3 中学习关于它的内容。
+
+</Callout>
+
+<Callout title=".bind 是什么？">
+  
+我们还有另一种方法可以解决这个问题：使用函数 bind 方法：
+
+<Accordions>
+<Accordion title="展开查看更多">
+
+```jsx
+// ✅ Valid:
+<button onClick={setTheme.bind(null, "dark")}>Toggle theme</button>
+```
+
+虽然这个方法效果很好，但在 React 社区中并不常见，而且没有明显的优势。我建议使用匿名包装函数。<abbr title='唯一的例外情况是当你确实需要指定一个上下文值（用于"this"）时。但这在 React 应用程序中是非常非常罕见的情况。'>\*</abbr>
+
+</Accordion>
+</Accordions>
+
+</Callout>

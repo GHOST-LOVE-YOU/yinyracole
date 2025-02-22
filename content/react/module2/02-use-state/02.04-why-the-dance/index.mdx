@@ -1,0 +1,249 @@
+---
+title: 为什么这么麻烦
+description: Why the Dance?
+---
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+这是一个在社交媒体和开发者社区中流传的 meme：
+
+![khaby-svelte](/react/khaby-svelte.jpg)
+
+它展示了 TikTok 现象 Khaby Lame。他的整个表现风格是展示事物是如何被过度设计的，并且可以大大简化。
+
+这里的笑话是，React 中的状态是如此复杂，而在 Svelte（一个替代的前端框架，角落里的那个 "S" 代表它）中，它要简单得多。
+
+在本视频中，我们探讨了 React 为什么以这种方式运作，为什么它不能像 Svelte 那样运作，以及这可能并不一定是坏事的原因。
+
+让我们先来看一个典型的 React 设置：
+
+```jsx
+function App() {
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <>
+      <p>You've clicked {count} times.</p>
+      <button
+        onClick={() => {
+          setCount(count + 1);
+        }}
+      >
+        Click me!
+      </button>
+    </>
+  );
+}
+```
+
+为了好玩，让我们尝试以 Svelte 的方式来做这个。我们来转换这段代码：
+
+```jsx
+function App() {
+  // [!code highlight]
+  let count = 0;
+
+  return (
+    <>
+      <p>You've clicked {count} times.</p>
+      <button
+        onClick={() => {
+          // [!code highlight]
+          count = count + 1;
+        }}
+      >
+        Click me!
+      </button>
+    </>
+  );
+}
+```
+
+看起来好得多，但不幸的是，它不起作用。
+
+但为什么不呢？Svelte 是这样做的，对吧？
+
+好吧，事情是这样的：JavaScript 并没有给我们提供一种“观察”变量的方法。当我们将 count 变量从 0 重新赋值为 1 时，什么也不会发生。
+
+在 React 中更新 UI 的唯一方法是触发重新渲染。由于我们无法观察变量，React 无法知道改变 count 变量应该触发重新渲染！
+
+它在 Svelte 中有效，因为 Svelte 不是 JavaScript。它是一种编译为 JavaScript 的自定义语言。你在 Svelte 中编写的代码更简单，但也更具魔力；编译器会将其转换为与 React 一样复杂的东西，但它隐藏在帷幕后，无法被看到。
+
+现在，假设我们有一根魔法棒，我们可以随心所欲地改变 React API。也许我们可以这样做：
+
+```jsx
+import React from "react";
+
+function App() {
+  let count = 0;
+
+  return (
+    <>
+      <p>You've clicked {count} times.</p>
+      <button
+        onClick={() => {
+          count = count + 1;
+          React.reRender();
+        }}
+      >
+        Click me!
+      </button>
+    </>
+  );
+}
+```
+
+我们改变 count 变量，然后明确告诉 React 使用一个虚构的 React.reRender() 函数调用重新渲染。
+
+好吧，即使这个方法存在，它仍然不会有效。😬
+
+要理解原因，我们先跳出 React，从原生 JavaScript 的角度来看这个问题：
+
+```jsx
+function helloWorld() {
+  let count = 0;
+  count = count + 1;
+}
+```
+
+当我们调用这个 helloWorld() 函数时，我们初始化一个 count 变量，但它的作用域仅限于这个 helloWorld 函数。然后我们递增它，之后函数结束。
+
+假设我们连续多次调用这个函数：
+
+```jsx
+function helloWorld() {
+  let count = 0;
+  count = count + 1;
+}
+
+helloWorld();
+helloWorld();
+helloWorld();
+helloWorld();
+```
+
+在每种情况下， count 将被重新初始化为 0 ，并递增到 1 。它不会“记住”上一个函数调用的值！
+
+现在，让我们再看一下我们的 React 示例：
+
+```jsx
+import React from "react";
+
+function App() {
+  let count = 0;
+
+  return (
+    <>
+      <p>You've clicked {count} times.</p>
+      <button
+        onClick={() => {
+          count = count + 1;
+          React.reRender();
+        }}
+      >
+        Click me!
+      </button>
+    </>
+  );
+}
+```
+
+当我们在 React 中“渲染一个组件”时，我们调用这个函数。这意味着每当 App 渲染时，它会再次运行所有这些代码。我们创建一个新的 count 变量，并将其初始化为 0。这是同样的问题！
+
+我们需要做的是将值保存在这个组件外部，放在 React 的某个地方。然后，我们可以将其提取出来。也许像这样：
+
+```jsx
+import React from "react";
+
+function App() {
+  // [!code highlight]
+  let count = getValueForState({ initialValue: 0 });
+
+  return (
+    <>
+      <p>You've clicked {count} times.</p>
+      <button
+        onClick={() => {
+          // [!code highlight]
+          React.reRender(count + 1);
+        }}
+      >
+        Click me!
+      </button>
+    </>
+  );
+}
+```
+
+实际上，这几乎就是 useState 钩子的作用！
+
+让我们再看看原始代码：
+
+```jsx
+function App() {
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <>
+      <p>You've clicked {count} times.</p>
+      <button
+        onClick={() => {
+          setCount(count + 1);
+        }}
+      >
+        Click me!
+      </button>
+    </>
+  );
+}
+```
+
+我们使用 useState 函数创建一个 count 状态变量。这个值存在于组件实例上，稍后我们将学习有关这一点的内容。
+
+此函数给我们提供了 count 的当前值，以及一个 setCount 函数。此函数有两个目的：
+
+1. 它允许我们更改 count 的值。这是我们想到的主要内容。
+2. 它向 React 发出重新渲染的信号，就像我们的假设 React.reRender() 方法一样！
+
+当我们考虑这个问题时，这实际上是一种非常优雅的解决方案。
+
+因此，React 的方式显然比 Svelte 的方式要冗长得多，但它也更“真实”。复杂性是显而易见的，而不是被掩盖起来。
+
+这并不是对 Svelte 的批评。老实说，Svelte 很棒！但这是一个显著的权衡，我不清楚哪种方法客观上更好。就我个人而言，我更喜欢理解发生了什么。
+
+在我职业生涯的开始，我是一名使用 Ruby on Rails 的后端开发者。如果你不熟悉，Ruby on Rails 是一个依赖于魔法的 Ruby 框架。你只需写少量代码，一群看不见的小精灵就会启动，为你做很多酷炫的事情。
+
+在最佳情况下，这很好。你可以超级快速地移动……一开始。但最终，你会遇到你认为它是怎样运作的和它实际上是怎样运作之间的不一致。或者，也许你以一种稍微不传统的方式做某事。或者，你碰到框架中的一些小众错误。
+
+当这些事情发生时，你会突然迷失在森林中。因为你实际上并不理解发生了什么，所以几乎不可能解决问题。我在 Ruby on Rails 的战壕中度过了很多天，只是试图让它恢复正常。
+
+![lost-woods](/react/lost-woods.png)
+
+React 的方式有更陡峭的学习曲线，可能会显得更加复杂，但现在我理解了它，我从不觉得自己迷失在树林里。这就是 React 使用起来如此愉快的一部分原因。
+
+</Accordion>
+
+</Accordions>
+
+<Callout title="过时的语法">
+
+在这个视频中，我涂鸦了一些看起来像这样的代码：
+
+```jsx
+ReactDOM.render(<App />);
+```
+
+我在这里暴露了我的年龄 😅 这就是我们以前渲染 React 应用的方式，但在 React 18 中发生了变化。应该是这个：
+
+```jsx
+import { createRoot } from "react-dom/client";
+
+const root = createRoot(container);
+root.render(<App />);
+```
+
+请放心，我们在课程早些时候讲解这个过程时使用了正确/现代的语法。对造成的任何困惑表示歉意！
+
+</Callout>

@@ -1,0 +1,173 @@
+---
+title: 动态key生成
+description: 动态key生成
+---
+
+import AppJsCode from "./code/App.js.example";
+import StickerPadJsCode from "./code/StickerPad.js.example";
+import StickerPadModuleCssCode from "./code/StickerPad.module.css.example";
+import StickersDataJsCode from "./code/Stickers.data.js.example";
+import indexJsCode from "./code/index.js.example";
+import resetCssCode from "./code/reset.css.example";
+import stylesCssCode from "./code/styles.css.example";
+
+在上一个模块中，我们学习了 React keys。当使用 .map 遍历数据时，我们需要为每个 React 元素提供一个唯一的 key 属性，以便 React 知道在渲染之间触发哪些 DOM 操作。
+
+在之前的例子中，我们的数据方便地为每个项目提供了唯一的标记，我们能够使用这些标记：
+
+```jsx
+const inventory = [
+  {
+    id: "abc123",
+    name: "Soft-boiled egg press",
+  },
+  {
+    id: "def456",
+    name: "Hello Kitty toothbrush",
+  },
+];
+
+// We can use the `id` field in our iterations:
+inventory.map((item) => <ShopItem key={item.id} item={item} />);
+```
+
+但是如果我们的数据没有我们可以使用的唯一标记呢？
+
+实际上，这是开发者最常问的一个问题。React 对每个项目都需要一个唯一的值，但我们并不总是有这个值！
+
+让我们通过一个例子来探索。
+
+## 贴纸
+
+在下面的沙盒中，您可以点击生成随机贴纸：
+
+核心逻辑已完成，但我们在控制台中收到了一个关键警告！让我们来修复它。
+
+我将详细讲解这段代码是如何工作的，以及我们如何解决这个问题，但我鼓励你花几分钟自己动手尝试一下，看看你是否能理解发生了什么，并提出任何解决方案。
+
+目标是通过动态生成每个贴纸的key来解决关键警告问题。
+
+<Sandpack
+  files={{
+    "App.js": { code: AppJsCode, hidden: true },
+    "StickerPad.js": StickerPadJsCode,
+    "StickerPad.module.css": StickerPadModuleCssCode,
+    "Stickers.data.js": { code: StickersDataJsCode, hidden: true },
+    "index.js": { code: indexJsCode, hidden: true },
+    "reset.css": { code: resetCssCode, hidden: true },
+    "styles.css": { code: stylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+这段代码相当复杂。我们来谈谈它，看看我们如何解决关键警告：
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+首先，我们来看看代码是如何工作的：
+
+- 在视口中点击会随机拉取一个“贴纸”对象，添加用户的 X/Y 光标位置，并将其推入 stickers 状态数组中（使用扩展运算符以防止变更）。
+- 我们渲染贴纸数组，为每个贴纸指定一个 \<img> 标签，并应用来自贴纸对象的数据。
+
+我们还没有设置任何类型的 key 属性，而且我们应该使用什么并不明显。如果我们尝试使用 src ，我们会遇到重复，因为我们只有有限数量的贴纸形状，而用户可以添加无限的贴纸。
+
+即使我们尝试创建一个“复合”键，结合我们拥有的所有数据，仍然不能保证足够！用户可以在完全相同的位置放置多个贴纸。
+
+如果我们把键设置为 Math.random() 呢？好吧，这解决了警告，但这真是个坏主意。
+
+- 每次我们添加一个新贴纸时，我们的组件都会重新渲染，重新运行所有这些代码。这意味着在每次渲染时，我们每个贴纸图像都会被赋予一个全新的键（因为 Math.random() 每次都会产生一个不同的数字！）
+- 当 React 看到一个项目的 key 发生变化时，它会假设这是一个全新的项目！即使所有属性完全相同，React 也会通过摧毁该元素并从头创建一个全新的元素来响应。
+- 这意味着如果我们的数组中有 10 个贴纸，添加第 11 个时，React 会删除 10 个图像并创建 11 个图像，而不是只创建一个图像而不动 10 个没有改变的图像。
+- 与 DOM 交互是我们在 JavaScript 中可以做的最慢的事情之一，因此我们确实想要将其最小化。
+
+将每个贴纸分配一个随机值的核心思想是个好主意，但在每次渲染时重新分配该值是有问题的。
+
+相反，如果我们在 onClick 处理程序中创建一个随机 ID，当贴纸被创建时，会怎么样？
+
+```jsx
+<button
+  className={styles.wrapper}
+  onClick={(event) => {
+    const stickerData = getSticker();
+    const newSticker = {
+      ...stickerData,
+      x: event.clientX,
+      y: event.clientY,
+      // Generate the random number on click, not during render!
+      id: Math.random(),
+    };
+
+    const nextStickers = [...stickers, newSticker];
+    setStickers(nextStickers);
+  }}
+>
+```
+
+通过这种方法，我们在每次渲染时不会重新生成 ID。这运作得好得多！
+
+有很多方法可以创建唯一标识符。除了 Math.random() 外，我们还可以使用 crypto.randomUUID() ，它生成一个更长的字母数字随机值。
+
+</Accordion>
+
+</Accordions>
+
+这是视频中的最终代码：
+
+```jsx
+function StickerPad() {
+  const [stickers, setStickers] = React.useState([]);
+
+  return (
+    <button
+      className={styles.wrapper}
+      onClick={(event) => {
+        const stickerData = getSticker();
+        const newSticker = {
+          ...stickerData,
+          x: event.clientX,
+          y: event.clientY,
+          // [!code highlight]
+          // Come up with a unique value for this sticker.
+          // [!code highlight]
+          id: crypto.randomUUID(),
+        };
+
+        const nextStickers = [...stickers, newSticker];
+        setStickers(nextStickers);
+      }}
+    >
+      {stickers.map((sticker) => (
+        <img
+          // [!code highlight]
+          // Use that previously-created unique value
+          // [!code highlight]
+          // for the key:
+          // [!code highlight]
+          key={sticker.id}
+          className={styles.sticker}
+          src={sticker.src}
+          alt={sticker.alt}
+          style={{
+            left: sticker.x,
+            top: sticker.y,
+            width: sticker.width,
+            height: sticker.height,
+          }}
+        />
+      ))}
+    </button>
+  );
+}
+```
+
+<Callout type="warn" title="换一种方式解决了吗？">
+
+如果你尝试了解决这个问题，很可能你会得出一个不同的解决方案。你的解决方案可能甚至比我想出的方案简单得多！
+
+事实证明，许多看似简单的解决方案在某些情况下有相当大的缺点：它们可能导致性能问题或故障的用户界面错误。
+
+在下一课中，我们将深入探讨两种常见的替代解决方案，并准确了解那些风险是什么。
+
+</Callout>

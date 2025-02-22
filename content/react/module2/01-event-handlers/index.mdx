@@ -1,0 +1,139 @@
+---
+title: 事件处理程序
+desctription: aa
+---
+
+import { SandpackProvider, SandpackPreview } from "@codesandbox/sandpack-react";
+
+import AppJsCode from "./code/App.js.example";
+import EventLogJsCode from "./code/EventsLog.js.example";
+import stylesCssCode from "./code/styles.css.example";
+import indexJsCode from "./code/index.js.example";
+
+在我们研究在 React 中使用状态的细节之前，我们需要先谈谈事件。
+
+当用户与页面互动时，数百个事件被触发。浏览器就像一个侵入隐私的私家侦探，跟踪你所做的每一件小事。
+
+以下演示记录了一些常见事件。尝试与这个小部件互动，并注意随后记录的事件流：
+
+<SandpackProvider
+  template="react"
+  files={{
+    "App.js": AppJsCode,
+    "EventsLog.js": EventLogJsCode,
+    "index.js": indexJsCode,
+    "styles.css": stylesCssCode,
+  }}
+>
+  <SandpackPreview style={{ height: "300px" }} />
+</SandpackProvider>
+
+当我们构建动态网页应用时，这些事件变得非常重要。我们将监听这些事件，并使用它们来触发状态变化。当用户点击“X”按钮时，我们会关闭提示。当用户提交表单时，我们会显示一个加载旋转器。
+
+为了响应一个事件，我们需要监听它。JavaScript 提供了一种内置的方法来实现这一点，使用 addEventListener 方法：
+
+```js
+const button = document.querySelector(".btn");
+
+function doSomething() {
+  // Stuff here
+}
+
+button.addEventListener("click", doSomething);
+```
+
+在这段代码中，我们正在监听一个特定事件（点击），目标是一个特定元素（ .btn ）。我们有一个函数用来处理这个事件， doSomething 。当用户点击这个特定的按钮时，我们的处理函数将被调用，这样我们就可以对此做出响应。
+
+该web平台(React)还提供了另一种方法来实现这一点。我们可以直接在 HTML 中嵌入我们的处理程序：
+
+```html
+<button onclick="doSomething()">Click me!</button>
+```
+
+React 利用这个模式，允许我们直接在 JSX 中传递事件处理程序：
+
+```jsx
+function App() {
+  function doSomething() {
+    // Stuff here
+  }
+
+  return <button onClick={doSomething}>Click me!</button>;
+}
+```
+
+与 addEventListener 一样，这段代码将执行相同的功能：当用户点击按钮时，将调用 doSomething 函数。
+
+这是在 React 中处理事件的推荐方式。虽然我们有时必须使用 addEventListener 来处理窗口级事件（详见模块 3），但我们应该尽可能使用“on X”属性，例如 onClick 和 onChange 。
+
+有几个很好的理由：
+
+1. **自动清理**。每当我们添加事件监听器时，我们也应该在完成后使用 removeEventListener 将其移除。如果我们忘记这样做，就会引入一个内存泄漏<abbr title="内存泄漏发生在当我们的应用程序本应释放某些内存却未能释放的情况下。结果导致应用程序持续消耗越来越多的内存，直到最终导致浏览器标签页崩溃。">?</abbr>React 会自动为我们移除监听器，当我们使用 “on X” 处理函数时。
+
+2. **性能提升**。通过让 React 控制事件监听器，它可以为我们优化一些事情，比如将多个事件监听器批处理在一起以减少内存消耗。
+
+3. **不与 DOM 交互**。React 希望我们保持在其抽象层内。我们通常尝试避免直接与 DOM 交互。为了使用 addEventListener ，我们必须使用 querySelector 查找元素。这是我们应该避免的。在 React 中，“快乐路径”意味着让 React 为我们处理 DOM 操作。
+
+<Callout title="保持在抽象之中">
+
+我想稍微扩展一下最后一点，因为它涉及到一个非常重要的事情。
+
+React 的核心理念之一是它为你处理 DOM 操作。当使用 React 时，你实际上不应该使用 querySelector 。我们希望保持在 React 的抽象层内，而不是试图与它竞争来管理 DOM。
+
+当我在 2015 年首次开始学习 React 时，我选择的工具是 jQuery。如果你不熟悉，jQuery 是一个使选择和修改 DOM 变得简单的工具。它是一个 DOM 操作工具。
+
+我记得我很沮丧，因为我“行之有效”的惯例突然在 React 中被认为是坏实践。有时，用 jQuery 管理 DOM 似乎要简单得多，而不是试图弄清楚如何用 React 来做。
+
+老实说，这种心态让我自食其果。我试图将 React 弯曲成我熟悉的形状，但 React 实在不是那么灵活。一旦我终于学会了正确的方法，一切变得简单多了，容易多了。
+
+在学习新技术时，试图将其压缩成熟悉的形状是很自然的。但我向你保证，顺应潮流学习会让你更轻松，而不是试图与之对抗。
+
+</Callout>
+
+## 与 HTML 的区别
+
+当我们查看 onChange 属性时，它与“在 HTML 中”添加事件处理程序的方法看起来非常相似。不过，还是有一些关键的区别。
+
+### 驼峰命名法
+
+正如我们在上一模块中看到的，我们需要在 JSX 中编写“camelCased”属性名称。要小心地编写 onClick ，使用大写“C”，而不是 onclick 。对于 onChange 、 onKeyDown 、 onTransitionEnd 等也是如此。
+
+好的消息是：如果你忘记了，控制台会给你一个有用的警告，提醒你你的错误：
+
+<Callout type="error">
+
+警告：无效的事件处理程序属性 onclick 。您是想说 onClick 吗？
+
+</Callout>
+
+这个常见的错误往往很容易被发现。让我们看看另一个不幸的是更难发现的常见问题。
+
+### 传递函数引用
+
+在使用事件处理程序时，我们需要传递对函数的引用。我们不会像在 HTML 中那样调用函数：
+
+```jsx
+// ✅ We want to do this:
+<button onClick={doSomething} />
+
+// 🚫 Not this:
+<button onClick={doSomething()} />
+```
+
+当我们包含括号时，函数会在 React 应用程序渲染的那一刻立即被调用。我们不想这样做；我们想给 React 一个对函数的引用，以便 React 可以在稍后的时间调用该函数，当用户点击按钮时。
+
+如果 JSX 造成了困扰，这里是用编译后的 JavaScript 编写的相同代码：
+
+```js
+// ✅ Correct.
+// Will be called when the user clicks the button.
+React.createElement("button", {
+  onClick: doSomething,
+});
+
+// 🚫 Incorrect
+// Will be called immediately, when the element is created.
+React.createElement("button", {
+  onClick: doSomething(),
+});
+```

@@ -1,0 +1,13 @@
+{
+  "title": "Module 2 | 开始使用状态",
+  "pages": [
+    "index",
+    "01-event-handlers",
+    "02-use-state",
+    "03-forms",
+    "04-props-vs-state/index",
+    "05-complex-state",
+    "06-key-generation"
+  ],
+  "root": true
+}

@@ -1,0 +1,133 @@
+---
+title: Key 注意事项
+description: Key 注意事项
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstStickerPadJsCode from "./code/first/StickerPad.js.example";
+import firstStickerPadModuleCssCode from "./code/first/StickerPad.module.css.example";
+import firstStickersDataJsCode from "./code/first/Stickers.data.js.example";
+import firstIndexJsCode from "./code/first/index.js.example";
+import firstResetCssCode from "./code/first/reset.css.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+
+import secondAppJsCode from "./code/second/App.js.example";
+import secondIndexJsCode from "./code/second/index.js.example";
+import secondStyleCssCode from "./code/second/styles.css.example";
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+在上节课中，我分享了在我们的数据没有“内置”ID 的情况下的首选解决方案：当数据首次创建时，我生成一个唯一值，并将其附加到数据上。然后，在我遍历数据时，我可以将这个值用作键。
+
+你可能会想，为什么我还要费这么大劲，明明有更简单的解决方案呢？
+
+例如，我可以使用数组索引作为键：
+
+```jsx
+<button>
+  {stickers.map((sticker, index) => (
+    <img key={index} />
+  ))}
+</button>
+```
+
+或者，也许我可以使用一个递增计数器，带有 stickers.length :
+
+```jsx
+<button
+  onClick={(event) => {
+    const stickerData = getSticker();
+    const newSticker = {
+      ...stickerData,
+      x: event.clientX,
+      y: event.clientY,
+      id: stickers.length
+    };
+  }}
+>
+```
+
+这两种解决方案在这种情况下都有效，但它们并不适用于所有情况。在其他场景中，这两种替代方案会导致显著的性能问题。它们甚至可能导致令人困惑、难以理解的用户界面错误。
+
+在这个视频中，我们探讨了两个场景，在这两个场景中，这两种解决方案都会导致问题。首先，我们看一个“贴纸”示例的轻微变体，在这个示例中，我可以右键点击删除贴纸：
+
+<video controls loop muted playsInline width="100%">
+  <source src="/react/key-scenario-stickers.mp4" type="video/mp4" />
+</video>
+
+我们还查看了一个“邀请者名单”应用程序：
+
+<video controls loop muted playsInline width="100%">
+  <source src="/react/key-scenario-invitees.mp4" type="video/mp4" />
+</video>
+
+不幸的是，很难充分总结这两种情况的问题；我强烈建议观看（或重新观看）这个视频，以明确了解问题所在。
+
+快速总结一下：
+
+- 使用数组索引作为键的问题在于我们永远无法删除或重新排序索引。例如，如果我们移除数组中的第一个项目，React 实际上会删除与数组中最后一个项目相关联的 DOM 节点，然后必须对所有其他 DOM 节点进行大量工作。
+- 使用 stickers.length 的问题在于，如果可以删除项目，它可能会导致重复的键。
+
+键是 React 唯一识别每个 DOM 节点的方式。如果我们告诉 React 某个特定的 DOM 节点通过 0 或 1 来识别，React 会在每次渲染时更改该特定的 DOM 节点，以便它与当前的 UI 匹配。
+
+这里是视频中的 Figma 图表：
+
+![stickers-figma-array-index](/react/stickers-figma-array-index.png)
+
+![stickers-figma-array-length](/react/stickers-figma-array-length.png)
+
+</Accordion>
+
+</Accordions>
+
+这里是上面视频中的两个沙盒，附有评论解释视频中略过的一些内容：
+
+<Sandpack
+  files={{
+    "App.js": { code: firstAppJsCode, hidden: true },
+    "StickerPad.js": firstStickerPadJsCode,
+    "StickerPad.module.css": firstStickerPadModuleCssCode,
+    "Stickers.data.js": { code: firstStickersDataJsCode, hidden: true },
+    "index.js": { code: firstIndexJsCode, hidden: true },
+    "reset.css": { code: firstResetCssCode, hidden: true },
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+邀请宾客名单：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "index.js": { code: secondIndexJsCode, hidden: true },
+    "styles.css": { code: secondStyleCssCode, hidden: true },
+    "reset.css": { code: firstResetCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+<Callout title="弯曲规则">
+
+在本课中，我们看到了一些使用数组索引作为 key 可能导致问题的例子。我在视频的最后提到，您可以通过遵循我在上一课中分享的“生成随机值”策略来避免所有这些问题。
+
+但是，我们总是需要这么做吗？还是有时可以将数组索引作为键？
+
+从技术上讲，如果顺序保持 100%一致，使用数组索引作为键是安全的。如果项目从未更改位置，就不会出现任何问题。
+
+但是问题是：并不总是明显顺序何时会改变。有许多情况可能导致问题。以下是一个不完整的列表：
+
+- 删除项目。
+- 在数组的开始/中间添加新项。
+- 改变物品排序的方式（例如，升序→降序）。
+- 过滤项目以显示/隐藏某些元素。
+
+有时候我认为使用数组索引作为键是安全的，但结果证明我错了。😬
+
+最终，我达到了一个非常熟悉这些东西的阶段，如今我偶尔会将数组索引作为键，当我 100%确信这不会引起任何问题时（而且我有点懒 😅）。
+
+但是在你达到那种舒适程度之前，我建议你总是花几分钟时间以正确的方式做事情，为数组中的每个元素生成真正独特的价值。虽然这一开始会多花一些时间，但可以避免未来很多的困惑。
+
+</Callout>

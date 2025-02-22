@@ -1,0 +1,52 @@
+:root {
+  --shadow-color: 15deg 41% 48%;
+  --shadow-elevation-low:
+    0.3px 0.5px 0.5px hsl(var(--shadow-color) / 0.73),
+    0.4px 0.7px 0.7px -2.3px hsl(var(--shadow-color) / 0.51),
+    1.1px 2.2px 2px -4.6px hsl(var(--shadow-color) / 0.29);
+  --shadow-elevation-medium:
+    0.3px 0.5px 0.5px hsl(var(--shadow-color) / 0.77),
+    0.5px 1px 0.9px -1.5px hsl(var(--shadow-color) / 0.59),
+    1.8px 3.7px 3.3px -3.1px hsl(var(--shadow-color) / 0.42),
+    5.4px 10.8px 9.8px -4.6px hsl(var(--shadow-color) / 0.24);
+  --shadow-elevation-high:
+    0.3px 0.5px 0.5px hsl(var(--shadow-color) / 0.71),
+    0.5px 1.1px 1px -0.7px hsl(var(--shadow-color) / 0.63),
+    1.3px 2.5px 2.3px -1.3px hsl(var(--shadow-color) / 0.55),
+    2.9px 5.8px 5.3px -2px hsl(var(--shadow-color) / 0.47),
+    6px 12px 10.9px -2.6px hsl(var(--shadow-color) / 0.39),
+    11px 22px 19.9px -3.3px hsl(var(--shadow-color) / 0.31),
+    18.4px 36.8px 33.3px -3.9px hsl(var(--shadow-color) / 0.22),
+    28.8px 57.5px 52.1px -4.6px hsl(var(--shadow-color) / 0.14);
+}
+
+body {
+  background-color: #f9c5b4;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.box {
+  margin: 0 auto;
+  border-radius: 16px;
+  background: white;
+  box-shadow: var(--shadow-elevation-high);
+  padding: 2px;
+}
+.box p {
+  font-size: 1.25rem;
+  text-align: center;
+  font-weight: 500;
+  padding: 30px;
+}
+.actions {
+  display: flex;
+  justify-content: space-between;
+  border-top: 1px solid hsl(15deg 40% 90%);
+  padding: 14px;
+}
