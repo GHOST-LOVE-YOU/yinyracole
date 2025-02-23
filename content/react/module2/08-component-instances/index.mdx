@@ -1,0 +1,108 @@
+---
+title: 组件实例
+description: 组件实例
+---
+
+import firstIndexJsCode from "./code/first/index.js.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+在 React 中有一个重要的概念很少被讨论：每当我们在 React 中渲染一个组件时，我们就会创建一个组件实例。
+
+关于组件实例的在线信息很多都非常过时；这个主题上最受欢迎的博客文章是 2016 年的！自那时以来，React 发生了很多变化，文章中提到的许多内容现在已经不再真实。
+
+让我们深入探讨一下。
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+注意：这段视频特别难以总结，因为它深入探讨了两个独立的沙盒。我强烈建议观看这段视频，如果你还没有的话！它涵盖了一些非常重要的内容，而这个总结无法充分表达。
+
+当我们创建一个状态钩子时，那个状态实际上存储在哪里？它与 React 元素相关联，还是存储在一个集中位置？
+
+缺失的信息称为组件实例。
+
+每当我们第一次渲染一个组件时，我们会“挂载”该组件。挂载组件涉及两个步骤：
+
+1. 我们评估返回的 JSX 并将其传递给 React，以便 React 可以创建相应的 DOM 元素。
+2. 我们创建一个组件实例，这是一个持久的对象，保存有关该组件特定实例的上下文信息。
+
+状态存储在这个特定的实例上。当我们写 React.useState() 时，这段代码“钩入”实例，从实例中获取和设置状态。
+
+通过条件渲染，可以卸载一个组件。当我们卸载一个组件时，我们会销毁该组件实例，并且任何存储的状态将永远丢失。
+
+组件实例允许我们渲染同一组件的多个“副本”，并且它们各自拥有自己的内部状态。
+
+</Accordion>
+
+</Accordions>
+
+这是视频中的第一个沙盒，最简单的 React 应用：
+
+<Sandpack
+  files={{
+    "index.js": { code: firstIndexJsCode, active: true },
+  }}
+  template="react"
+/>
+
+…这是视频中的第二个沙盒，一个更复杂的应用程序，带有可切换的页脚。
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "styles.css": secondStylesCssCode,
+  }}
+  template="react"
+/>
+
+<Callout title="元素不创建实例，渲染才会创建">
+
+假设我们有以下代码：
+
+```jsx
+import React from "react";
+
+function Counter({ initialValue = 0 }) {
+  const [count, setCount] = React.useState(initialValue);
+
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+
+const elem = <Counter initialValue={10} />;
+
+console.log(elem);
+```
+
+我们正在创建一个 \<Counter /> 元素，但我们并没有对其进行任何操作。因此， Counter 组件实际上不会被渲染。将不会有组件实例，没有 count 状态变量，什么都没有。
+
+元素是我们想要创建的描述。在这种情况下，我们正在描述一个 Counter ，其初始值为 10 :
+
+```json
+{
+  type: ƒ Counter,
+  key: null,
+  ref: null,
+  props: {
+    initialValue: 10
+  },
+  _owner: null,
+  _store: {}
+}
+```
+
+为了创建一个组件实例，我们必须渲染它：
+
+```jsx
+import { createRoot } from "react-dom/client";
+
+const root = createRoot(document.querySelector("#root"));
+root.render(<Counter initialValue={10} />);
+```
+
+我们将这个 \<Counter /> 描述传递给 React，以便 React 可以将其实现。React 渲染 Counter 组件，在此过程中创建实例，并将 \{\{2 }} 添加到 DOM 中。
+
+在我们日常使用 React 的工作中，容易忘记这是所有 React 应用的根。它属于那种“设置好后就忘了”的东西，不需要任何维护。但从根本上说，React 元素在我们将它们传递给 React 进行渲染之前并不会做任何事情。
+
+</Callout>

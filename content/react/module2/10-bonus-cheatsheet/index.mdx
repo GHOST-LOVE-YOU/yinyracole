@@ -1,0 +1,321 @@
+---
+title: 奖励：Input备忘单
+description: 奖励：Input备忘单
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import thirdAppJsCode from "./code/third/App.js.example";
+import fourthAppJsCode from "./code/fourth/App.js.example";
+import fifthAppJsCode from "./code/fifth/App.js.example";
+import sixthAppJsCode from "./code/sixth/App.js.example";
+import seventhAppJsCode from "./code/seventh/App.js.example";
+import eighthAppJsCode from "./code/eighth/App.js.example";
+import ninthAppJsCode from "./code/ninth/App.js.example";
+import tenthAppJsCode from "./code/tenth/App.js.example";
+
+_（可选课程）_
+
+Web上有很多不同的表单控件，记住每个控件具体需要哪些属性可能会很困难。
+
+本课是一个附录，详细说明如何使用最常见的表单输入。
+
+我建议将这节课添加到书签中。每当你在构建表单时，我希望这节课能唤起你的记忆！
+
+## 文本输入(Text inputs)
+
+对于受控文本输入，我们将 React 状态绑定到 value 属性。我们可以使用 defaultValue 设置非受控文本输入的初始值。
+
+以下是如何使用受控文本输入：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+  }}
+  template="react"
+/>
+
+### 陷阱
+
+在处理受控文本输入时，请确保将空字符串 ( '' ) 作为初始状态。否则，您可能会遇到由于从非受控状态切换到受控状态而导致的边缘情况。
+
+```jsx
+// 🚫 Incorrect:
+const [email, setEmail] = React.useState();
+
+// ✅ Correct:
+const [email, setEmail] = React.useState("");
+```
+
+有关为什么这很必要的更多信息，请查看“数据绑定”课程。
+
+### 文本输入变体
+
+除了纯文本输入，我们还可以选择不同的“格式化”文本输入，例如电子邮件地址、电话号码和密码。
+
+好消息是：就数据绑定而言，这些变体的工作方式都是一样的。
+
+例如，以下是我们如何绑定一个 password 输入：
+
+```jsx
+const [secret, setSecret] = React.useState("");
+
+<input
+  type="password"
+  value={secret}
+  onChange={(event) => {
+    setSecret(event.target.value);
+  }}
+/>;
+```
+
+除了文本输入变体， \<input> 标签还可以转变为完全独立的表单控件。在本课后面，我们将讨论单选按钮、复选框以及滑块和颜色选择器等特殊输入。
+
+## 文本区域(Textareas)
+
+在 React 中， \<textarea> 元素的工作方式与文本输入完全相同。我们设置 value 以将其绑定到 React 状态，并设置 defaultValue 以为非受控组件设置初始值。
+
+这是如何使用受控文本区域的：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+  }}
+  template="react"
+/>
+
+## 单选按钮(Radio buttons)
+
+在单选按钮方面情况有些不同。要将单选按钮连接到 React，我们需要将 checked 属性设置为布尔值。它指定单选按钮当前是否被选中。
+
+defaultChecked 属性可以用来设置初始值，而不将其变为受控输入。
+
+### 最小控制示例
+
+<Sandpack
+  files={{
+    "App.js": thirdAppJsCode,
+  }}
+  template="react"
+/>
+
+当谈到单选按钮时，有许多属性需要记住。以下是总结它们的表格：
+
+| 属性     | 类型     | 解释                                                                                     |
+| -------- | -------- | ---------------------------------------------------------------------------------------- |
+| id       | string   | 此单选按钮的全球唯一标识符，用于提高可访问性和可用性。                                   |
+| name     | string   | 将一组单选按钮组合在一起，以便一次只能选择一个。组内所有单选按钮的值必须相同。           |
+| value    | string   | 指定此单选按钮所代表的“事物”。如果选择了此特定选项，将捕获/存储此内容。                  |
+| checked  | boolean  | 控制无线电按钮是否被选中。通过传递一个布尔值，React 会将其变为“受控”输入。               |
+| onChange | function | 像其他表单控件一样，当用户更改所选选项时，将调用此函数。我们使用此函数来更新我们的状态。 |
+
+### 迭代控制示例
+
+因为单选按钮有这么多属性，通常通过迭代生成它们会更有帮助；这样，我们只需编写一次 JSX！
+
+当选项本身是动态时（例如，从服务器获取），这也是必需的。
+
+这是一个例子：
+
+<Sandpack
+  files={{
+    "App.js": fourthAppJsCode,
+  }}
+  template="react"
+/>
+
+### 陷阱
+
+在使用迭代动态创建单选按钮时，我们需要小心不要意外地“重用”我们的状态变量所使用的变量名。
+
+避免这样:
+
+```jsx
+// [!code highlight]
+const [language, setLanguage] = React.useState();
+
+// [!code highlight]
+return VALID_LANGUAGES.map((language) => (
+  <input
+    type="radio"
+    name="current-language"
+    id={language}
+    value={language}
+    // [!code highlight]
+    checked={language === language}
+    onChange={(event) => {
+      setLanguage(event.target.value);
+    }}
+  />
+));
+```
+
+在我们的 .map() 通话中，我们将地图参数命名为 language ，但该名称已经被占用！我们的状态变量也叫 language 。
+
+这被称为“遮蔽”，这基本上意味着我们失去了对外部 language 值的访问。这是一个问题，因为我们需要它来准确设置 checked 属性！
+
+因此，我喜欢在遍历可能的选项时使用通用的 option 名称：
+
+```jsx
+// [!code highlight]
+VALID_LANGUAGES.map((option) => {
+  <input
+    type="radio"
+    name="current-language"
+    id={option}
+    value={option}
+    // [!code highlight]
+    checked={option === language}
+    onChange={(event) => {
+      setLanguage(event.target.value);
+    }}
+  />;
+});
+```
+
+## 复选框(Checkboxes)
+
+与单选按钮一样， checked 属性用于创建受控元素。它应该是一个布尔值，用于指定复选框当前是否被选中。
+
+defaultChecked 属性可以用来设置初始值，而不将其变为受控输入。
+
+当涉及复选框时，方法会因我们是处理单个复选框还是一组复选框而有所不同。让我们逐一看看
+
+### 单选框示例
+
+<Sandpack
+  files={{
+    "App.js": fifthAppJsCode,
+  }}
+  template="react"
+/>
+
+我们存储一个布尔状态变量 optIn ，并将其设置为 checked 值。当 optIn 为真时，复选框被选中。否则，复选框未被选中。
+
+当我们需要驱动多个复选框时，事情变得更加复杂。
+
+### 多个复选框示例
+
+有几种方法可以做到这一点，但我最喜欢的方法是使用类似于map的对象。以下是一个示例：
+
+<Sandpack
+  files={{
+    "App.js": sixthAppJsCode,
+  }}
+  template="react"
+/>
+
+使用单选按钮，我们可以将所有需要的信息合并为一个字符串：所选选项的 value 。但是，当我们有一组复选框时，我们需要存储更多数据，因为用户可以选择多个选项。
+
+这是我选择表示这个状态的方式：
+
+```jsx
+const initialToppings = {
+  anchovies: false,
+  chicken: false,
+  tomatoes: false,
+};
+```
+
+在 JSX 中，我们遍历这个对象的键，并为每个键渲染一个复选框。在迭代过程中，我们查找这个特定选项是否被选中，并使用它来控制复选框的 checked 属性。
+
+我们还向 onChange 传递一个函数，该函数将翻转相关复选框的值。由于 React 状态需要是不可变的，我们通过创建一个几乎相同的新对象来解决这个问题，该对象中的选项在 true/false 之间翻转。我是借助“扩展”语法 👀 来实现这一点的。
+
+这是一个表格，显示每个属性的用途：
+
+| 属性     | 类型     | 解释                                                                                             |
+| -------- | -------- | ------------------------------------------------------------------------------------------------ |
+| id       | string   | 用于改善可访问性和可用性的此复选框的全球唯一标识符。                                             |
+| value    | string   | 指定我们用这个复选框勾选和取消勾选的“事物”。                                                     |
+| checked  | boolean  | 控制复选框是否被选中。                                                                           |
+| onChange | function | 像其他表单控件一样，当用户选中或取消选中复选框时，将调用此函数。我们使用此函数来更新我们的状态。 |
+
+（我们也可以指定一个 name ，就像使用单选按钮一样，尽管在处理受控输入时这并不是严格必要的。）
+
+重新审视关于复杂状态的课程可能会有所帮助。
+
+## 选择(Select)
+
+要创建一个受控的选择标签，我们使用 value 属性。我们通过 onChange 处理器更新值。实际上，它的工作方式与文本输入完全相同！
+
+对于非受控选择标签，初始值可以通过 defaultValue 设置。
+
+以下是如何使用受控选择：
+
+<Sandpack
+  files={{
+    "App.js": seventhAppJsCode,
+  }}
+  template="react"
+/>
+
+也许比其他任何标签都更改过的是 \<select> ，它已被修改为适用于 React。在普通的 HTML/JS 环境中，您需要深入并切换适当 \<option> 子元素上的 selected 属性。幸运的是，在 React 中使用受控选择标签时，这并不是必需的。
+
+### 陷阱
+
+与文本输入一样，我们需要将状态初始化为有效值。这意味着我们的状态变量的初始值必须与以下选项之一匹配：
+
+```jsx
+// This initial value:
+const [age, setAge] = React.useState("0-18");
+
+// Must match one of the options:
+<select>
+  <option value="0-18">18 and under</option>
+</select>;
+```
+
+这是一条臭鱼。一个小错误，我们可能会遇到一些非常令人困惑的错误。
+
+为了避免这个潜在的错误，我更倾向于动态生成 \<option> 标签，使用一个单一的可信来源：
+
+<Sandpack
+  files={{
+    "App.js": eighthAppJsCode,
+  }}
+  template="react"
+/>
+
+## 特殊输入(Specialty inputs )
+
+正如我们所看到的， \<input> HTML 标签可以有多种不同形式。根据 type 属性，它可以是文本输入、密码输入、复选框、单选按钮……
+
+事实上，MDN 列出了 type 属性的 [22 个不同的有效值](https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input#input_types)。其中一些是“特殊的”，并具有独特的外观：
+
+- 滑块（type="range" ）
+- 日期选择器（type="date" ）
+- 颜色选择器（type="color" ）
+
+幸运的是，它们都遵循与文本输入相同的模式。我们使用 value 将输入锁定为状态的值，并使用 onChange 在编辑输入时更新该值。
+
+这是一个使用 \<input type="range"> 的示例：
+
+<Sandpack
+  files={{
+    "App.js": ninthAppJsCode,
+  }}
+  template="react"
+/>
+
+这是另一个例子，包含 \<input type="color"> :
+
+<Sandpack
+  files={{
+    "App.js": tenthAppJsCode,
+  }}
+  template="react"
+/>
+
+### 陷阱
+
+与文本输入一样，我们不想从不受控制转为受控制。我们需要将状态变量初始化为有效值。
+
+例如，对于范围输入，这将是一个数字：
+
+```jsx
+// 🚫 Incorrect:
+const [value, setValue] = React.useState();
+
+// ✅ Correct:
+const [value, setValue] = React.useState(5);
+```

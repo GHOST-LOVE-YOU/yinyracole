@@ -1,0 +1,80 @@
+---
+title: 提升状态管理
+description: 提升状态管理
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstSearchFormJsCode from "./code/first/SearchForm.js.example";
+import firstSearchResultsJsCode from "./code/first/SearchResults.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+
+import secondAppJsCode from "./code/second/App.js.example";
+import secondSearchFormJsCode from "./code/second/SearchForm.js.example";
+import secondSearchResultsJsCode from "./code/second/SearchResults.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+如果你曾在 React 社区中待过，听到“提升状态”这个术语的可能性很大。这已成为 React 开发者的流行语！
+
+这背后有一个很好的理由。提高手上的状态是一个非常重要的概念，是每个 React 开发者工具箱中至关重要的工具。因此，这是整个课程中最重要的课程之一！
+
+我们将通过查看提升状态的概念如何在一个示例应用中帮助我们来进行探索：
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+在 React 应用中传递状态的主要方式是通过 props<abbr title="另一种方法是通过上下文（context），它的工作方式非常相似。我们将在课程后面学习这个内容。">\*</abbr>. 这意味着状态总是从父级流向子级。兄弟姐妹之间无法直接共享状态。
+
+解决方案是将状态引入父组件，以便将其分发给两个需要它的兄弟组件。
+
+我们还可以传递状态设置函数，允许子组件更新状态。
+
+这是一个复杂的想法。让我们一步一步地来。
+
+首先，用户在文本框中输入。这会触发一个变化事件。
+
+我们的状态设置函数作为一个属性传入，已被调用。
+
+因为这个状态由 App 组件拥有，这会触发 App 的重新渲染，这意味着 SearchForm 和 SearchResults 也会被重新渲染
+
+SearchForm 被赋予 searchTerm 状态的新值，并更新输入
+
+SearchResults 还被赋予了 searchTerm 的新值，以便可以显示。
+
+为什么不把所有状态提到应用程序的最上面？除非你的应用非常小，否则这样做是不现实的。这会导致严重的性能问题，更不用说大量不必要的复杂性了。
+
+</Accordion>
+
+</Accordions>
+
+<Callout title="你头晕吗？">
+
+我记得我第一次遇到提升状态的想法时。那让我有点头疼。父组件传递一个函数，以便子组件可以更新父组件的状态，这个想法真是太疯狂了，第一次看到的时候！
+
+花些时间玩一下下面提供的游乐场。希望一些动手实验能帮助你理解这个想法。我鼓励你添加很多 console.log 调用，这样你就可以确切看到哪些组件被渲染，以及何时被渲染！
+
+</Callout>
+
+这是视频中的原始代码：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "SearchForm.js": firstSearchFormJsCode,
+    "SearchResults.js": firstSearchResultsJsCode,
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+这是最终代码，状态已提升：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "SearchForm.js": secondSearchFormJsCode,
+    "SearchResults.js": secondSearchResultsJsCode,
+    "styles.css": { code: secondStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>

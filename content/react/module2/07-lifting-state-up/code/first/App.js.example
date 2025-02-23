@@ -1,0 +1,22 @@
+import React from 'react';
+
+import SearchForm from './SearchForm';
+import SearchResults from './SearchResults';
+
+function App() {
+  return (
+    <>
+      <header>
+        <a className="logo" href="/">
+          Wanda’s Fruits
+        </a>
+        <SearchForm />
+      </header>
+      <main>
+        <SearchResults />
+      </main>
+    </>
+  );
+}
+
+export default App;

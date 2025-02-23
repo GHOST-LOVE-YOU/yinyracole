@@ -7,7 +7,11 @@
     "03-forms",
     "04-props-vs-state/index",
     "05-complex-state",
-    "06-key-generation"
+    "06-key-generation",
+    "07-lifting-state-up",
+    "08-component-instances/index",
+    "09-global-state/index",
+    "10-bonus-cheatsheet/index"
   ],
   "root": true
 }
