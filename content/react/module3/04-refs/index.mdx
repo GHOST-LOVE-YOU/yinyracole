@@ -1,0 +1,183 @@
+---
+title: Refs
+description: Refs
+---
+
+import AppJsCode from "./code/App.js.example";
+
+所以，作为网页开发者，我们通常使用一组标准的 DOM 原语来构建用户界面：div、按钮、表单等。
+
+但Web也提供了一种完全不同的绘制用户界面的方法：HTML Canvas。
+
+如果你不熟悉，HTML Canvas 提供了一种类似“Microsoft Paint”的功能，可以通过绘制形状来创建图形。我在我的博客上使用它来创建这个有趣的“小磁屑”效果：
+
+<video controls loop muted playsInline width="100%">
+  <source src="/react/module3/beatmapper.mp4" type="video/mp4" />
+</video>
+
+为了使用 HTML Canvas，我们首先渲染一个 \<canvas> 标签，然后使用 JavaScript 在其上运行一系列命令。它可能看起来像这样：
+
+```jsx
+const canvas = document.querySelector("canvas");
+const ctx = canvas.getContext("2d");
+
+// Draw a 200 × 100 pink rectangle:
+ctx.fillRect(0, 0, 200, 100);
+```
+
+ctx 是绘图表面。我们可以选择在 2D 或 3D（通过 webgl）中绘制。
+
+问题是：我们如何在 React 中使用这个元素？
+
+让我们讨论：
+
+<Accordions>
+
+<Accordion type='info' title='视频摘要'>
+
+当我们编写 JSX 时，我们实际上并不是在编写 HTML。我们创建的是 JS，而 React 将这些 JS 转换为真实的 DOM。
+
+这种距离通常是一件美好的事情，因为这意味着 React 为我们处理所有困难的事情。但有时，它会妨碍我们，当我们实际上需要访问 DOM 节点时。使用 \<canvas> 标签时就是这种情况
+
+现在，我们可以使用 document.querySelector 来获取渲染后元素的引用，但这在 React 中是一种不好的做法。我们不想“绕过” React 的抽象，我们想与之合作！
+
+React 提供了一个逃生口，正是为了这种情况： ref 属性！
+
+```jsx
+<canvas
+  width={200}
+  height={200}
+  // [!code highlight]
+  ref={function (canvas) {
+    // [!code highlight]
+    console.log(canvas); // <canvas> DOM node
+    // [!code highlight]
+  }}
+/>
+```
+
+每当 React 渲染这个元素时，它将调用 ref 函数并提供底层的 DOM 节点。
+
+在这个例子中，我使用一组画布命令绘制一个宝可梦球。如果我将我的 draw 函数重写为接受画布引用作为参数，我可以像这样调用该函数：
+
+```jsx
+<canvas
+  width={200}
+  height={200}
+  // [!code highlight]
+  ref={function (canvas) {
+    // [!code highlight]
+    draw(canvas);
+    // [!code highlight]
+  }}
+/>
+```
+
+这种方法有效，但这不是我想要的用户体验。相反，我希望用户点击“Draw!”按钮来触发动画。
+
+为了在按钮的 onClick 处理程序中访问这个画布引用，我需要将其保存在一个变量中：
+
+```jsx
+function ArtGallery() {
+  // [!code highlight]
+  let canvas;
+
+  return (
+    <main>
+      <div className="canvas-wrapper">
+        <canvas
+          // [!code highlight]
+          ref={function (ref) {
+            // [!code highlight]
+            canvas = ref;
+            // [!code highlight]
+          }}
+          width={200}
+          height={200}
+        />
+      </div>
+      <button
+        // [!code highlight]
+        onClick={() => {
+          // [!code highlight]
+          draw(canvas);
+          // [!code highlight]
+        }}
+      >
+        Draw!
+      </button>
+    </main>
+  );
+}
+
+function draw(canvas) {
+  // Code omitted
+}
+```
+
+这工作得出乎意料地好，但确实存在一些轻微的性能问题： ref 函数将在每次渲染时被调用，这意味着我们将不断查找这个 DOM 节点。
+
+如果我们能在组件第一次渲染时完成这项工作，那会更好。然后我们可以在每次后续渲染中传递画布引用。
+
+我们可以用一个我们还没有遇到的钩子来做到这一点， useRef :
+
+```jsx
+function ArtGallery() {
+  // 1. Create a “ref”, a box that holds a value.
+  const canvasRef = React.useRef(); // { current: undefined }
+
+  return (
+    <main>
+      <div className="canvas-wrapper">
+        <canvas
+          // 2. Capture a reference to the <canvas> tag,
+          // and put it in the “canvasRef” box.
+          //
+          // { current: <canvas> }
+          ref={canvasRef}
+          width={200}
+          height={200}
+        />
+      </div>
+      <button
+        onClick={() => {
+          // 3. Pluck the <canvas> tag from the box,
+          // and pass it onto our `draw` function.
+          draw(canvasRef.current);
+        }}
+      >
+        Draw!
+      </button>
+    </main>
+  );
+}
+```
+
+当我们调用 React.useRef 时，我们得到了一个具有 current 属性的对象。
+
+如果我们将具有此形状的对象传递给 ref 属性，React 将修改此对象，将 current 设置为画布引用。
+
+这仅在组件首次渲染时运行，从而提高性能。
+
+这是在 React 中处理 DOM 节点引用的常规方法！
+
+</Accordion>
+
+</Accordions>
+
+这是视频中的最终沙盒：
+
+<Sandpack
+  files={{
+    "App.js": AppJsCode,
+  }}
+  template="react"
+/>
+
+<Callout title='不仅仅是针对 DOM 节点！'>
+
+由 useRef 钩子创建的 ref 对象应该被视为一个盒子。我们可以在这个盒子里存储我们想要的任何东西：DOM 节点、数字、数组、对象、函数等。
+
+也就是说，refs 的主要用例是存储 DOM 节点。我很少需要在 ref 中存储其他任何东西。
+
+</Callout>

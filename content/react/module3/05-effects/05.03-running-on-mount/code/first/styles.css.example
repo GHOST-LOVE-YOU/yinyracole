@@ -1,0 +1,49 @@
+body {
+  background: hsl(0deg 0% 98%);
+  padding: 0px 32px;
+}
+#root {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 32px;
+}
+
+main {
+  width: 100%;
+  max-width: 500px;
+}
+form {
+  --shadow-color: 0deg 0% 51%;
+  display: flex;
+  background: white;
+  border: 1px solid hsl(0deg 0% 90%);
+  border-bottom: none;
+  /* prettier-ignore */
+  box-shadow:
+    0.3px 0.5px 0.7px hsl(var(--shadow-color) / 0.36),
+    1px 2.1px 2.8px -0.6px hsl(var(--shadow-color) / 0.42),
+    2.5px 5px 6.8px -1.2px hsl(var(--shadow-color) / 0.48),
+    5.8px 11.6px 15.9px -1.8px hsl(var(--shadow-color) / 0.54);
+  border-radius: 1000px;
+}
+input {
+  flex: 1;
+  min-width: 50px;
+  height: 3rem;
+  line-height: 3rem;
+  padding: 0 16px;
+  background: transparent;
+  border: none;
+  border-radius: 1000px 2px 2px 1000px;
+}
+button {
+  height: 3rem;
+  line-height: 3rem;
+  background: transparent;
+  border: none;
+  padding: 0 32px;
+  border-radius: 2px 1000px 1000px 2px;
+}

@@ -1,0 +1,16 @@
+{
+  "title": "Module 3 | React Hooks",
+  "pages": [
+    "index",
+    "01-use-id/index",
+    "02-rules-of-hooks/index",
+    "03-immutability/index",
+    "04-refs/index",
+    "05-effects",
+    "06-custom-hooks/index",
+    "07-data-fetching",
+    "08-memoization",
+    "09-additional-hooks"
+  ],
+  "root": true
+}

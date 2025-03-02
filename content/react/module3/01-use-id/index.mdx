@@ -1,0 +1,140 @@
+---
+title: useId Hook
+description: useId Hook
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstLoginFormJsCode from "./code/first/LoginForm.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondToggleJsCode from "./code/second/Toggle.js.example";
+import secondToggleModuleCssCode from "./code/second/Toggle.module.css.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+React 的一个核心理念是组件是可重用的。我们应该能够渲染几乎任何组件的多个实例，而不会出现任何问题。
+
+然而，网页平台的某些方面并不是出于可重用性而构建的。例如， id 属性需要全局唯一！我们如何在不意外违反此规则的情况下创建可重用的组件？
+
+好的，我们可以给组件添加一个新属性，比如 id 。这样，开发者可以为每个实例指定一个唯一的值。
+
+这有效，但这取决于开发者记得提供一个值，并确保它是全局唯一的。这说起来容易，做起来难！
+
+幸运的是，React 团队创建了一个新工具来帮助我们： useId 钩子。
+
+在我们的组件内部，我们可以输入：
+
+```jsx
+function LoginForm() {
+  const id = React.useId();
+}
+```
+
+该组件的每个实例将接收不同的值。例如，如果我们渲染 2 个实例，我们会注意到第一个实例中的 id 变量等于 :r0: ，而第二个实例中的 :r1: 。
+
+React hooks “hook into” 组件实例。因此，这个 ID 存在于实例上，并可以在渲染期间提取出来。
+
+这意味着该值在每次渲染中都保持不变。 id 在每次渲染的第一次实例中将始终等于 :r0: 。
+
+</Accordion>
+
+</Accordions>
+
+这是视频中的游乐场：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "LoginForm.js": firstLoginFormJsCode,
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+<Callout title="另一个好处">
+
+useId 钩子还有一个特别之处：它在服务器和客户端渲染中产生相同的值。这是一个非常特殊的属性，如果没有 React 提供的特殊解决方案，将很难重现。
+
+在本课程的后面部分，我们将进一步了解服务器端渲染以及它带来的复杂性。
+
+</Callout>
+
+## 练习 — 切换组件
+
+在这个沙盒中，您会发现一个几乎完全实现的 Toggle 组件。
+
+通过为按钮添加一个唯一的 ID，并将其连接到标签来完成它。您应该能够通过点击“Dark Mode”文本来触发切换。
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "Toggle.js": secondToggleJsCode,
+    "Toggle.module.css": secondToggleModuleCssCode,
+    "styles.css": secondStylesCssCode,
+  }}
+  template="react"
+/>
+
+<Callout title="解决方案代码">
+
+<Accordions>
+
+<Accordion title="展开查看更多">
+
+```jsx
+function Toggle({
+  label,
+  checked,
+  handleToggle,
+  backdropColor = "white",
+  size = 16,
+}) {
+  // [!code highlight]
+  const id = React.useId();
+
+  const padding = size * 0.1;
+  const width = size * 2 + padding * 2;
+
+  const wrapperStyle = {
+    width,
+    padding,
+    "--radius": size * 0.25 + "px",
+    "--backdrop-color": backdropColor,
+  };
+
+  const ballStyle = {
+    width: size,
+    height: size,
+    transform: checked ? `translateX(100%)` : `translateX(0%)`,
+  };
+
+  return (
+    <div className={styles.wrapper}>
+      // [!code highlight]
+      <label htmlFor={id}>{label}</label>
+      <button
+        // [!code highlight]
+        id={id}
+        className={styles.toggle}
+        type="button"
+        aria-pressed={checked}
+        style={wrapperStyle}
+        onClick={() => {
+          handleToggle(!checked);
+        }}
+      >
+        <span className={styles.ball} style={ballStyle} />
+      </button>
+    </div>
+  );
+}
+```
+
+</Accordion>
+
+</Accordions>
+
+</Callout>

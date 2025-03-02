@@ -1,0 +1,152 @@
+---
+title: 在事件上获取
+description: 在事件上获取
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+如果你曾经为自己建立过开发者作品集，那么你很可能已经实现了一个联系表单。这些表单在互联网上随处可见。
+
+让我们看看怎么实现一个联系表单
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+这个视频展示了一个联系表单的实现。它包含两个受控输入，分别是电子邮件和消息，但目前提交表单的功能尚未配置。
+
+策略是将一个函数传递给表单上的 onSubmit 属性，它将使用 event.preventDefault() 停止默认行为。我们将使用 fetch 自行管理提交。
+
+要提交请求，我们将调用 fetch 并使用提供的端点。因为 fetch 是基于 Promise 的，我们将使其成为一个异步函数，以便我们可以 await 响应。
+
+我们想提供两个选项：
+
+将 method 更改为 POST ，因为这正是端点所期望的。
+
+提供数据、电子邮件和消息
+
+我们需要使用 JSON.stringify() 将数据字符串化，因为在网络上发送对象是不可能的。如果我们不这样做，浏览器会尝试为我们将其字符串化，并发送字符串 "[object Object]" 。
+
+我们将从响应中派生出 JSON，使用 await response.json() 。这是必要的，因为并不是所有的响应都会立即包含完整的主体（例如，如果这是一个流式响应）。
+
+我们看到响应成功，并且它反映了我们提交以供验证的数据。
+
+这是进行基于事件的网络请求的基本策略，但在用户体验方面还有很多工作要做！我们将在下面讨论。
+
+</Accordion>
+
+</Accordions>
+
+在这个视频中，我们看到如何使用 fetch 向我们的后端 API 发送数据。我们看到如何发送 POST 请求，如何将请求体字符串化，以及如何验证我们是否收到了来自服务器的正确响应。
+
+但实际上，这个实现还不完整。我们需要更新用户界面，以便用户随时知道发生了什么！
+
+这是上面视频中的沙箱：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+## 加载、成功和错误状态
+
+在提交网络请求时，我们希望更新用户界面以指示三种不同的状态：
+
+- Loading 加载中
+- Success 成功
+- Error 错误
+
+在下面的视频中，我将向你展示我如何实现这些状态，并相应地更新用户界面，但我鼓励你自己动手尝试，使用上面的演练场。随意按照你想要的方式构建内容，以你认为最合理的方式更新用户界面。
+
+这是我将如何处理它：
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+我创建一个 status 状态变量，具有 4 个可能的值：
+
+- idle
+- loading
+- success
+- error
+
+当表单提交后，我立即将状态更改为 loading
+
+我们如何判断请求是否成功？虽然可以使用状态码，但这可能不可靠，所以我们将检查 JSON 输出。如果 json.ok 为真，我们将状态更改为 success 。否则，将为 error 。
+
+当状态为 loading 时，我将以两种方式更改用户界面：
+
+1. 所有输入和按钮将被禁用。这是一个视觉提示，表明Event正在发生，同时也防止意外的多次提交。
+2. 我会将按钮文本从“Submit”更改为“Submitting…”。加载中图标也会很好。
+
+当状态为 success 时，我们有几种选择。我们可以用成功消息替换表单，或者在表单下方显示一条小提示。如果我们选择继续显示表单，我们需要重置消息。
+
+对于 error 状态，我们将在表单下方显示一个通用错误信息。
+
+- 可以对错误进行非常细致的分类，但我更倾向于依赖 HTML 验证。我们能获得很多免费的东西！
+- 服务器端验证仍然很重要，因为狡猾的用户可以禁用客户端验证，但如果有人明确禁用用户友好的验证，我认为没有理由从服务器提供高质量的验证。
+
+</Accordion>
+
+</Accordions>
+
+在上面的视频中，我们讨论了 HTML 验证。您可以在 MDN 上了解更多：“[约束验证](https://developer.mozilla.org/en-US/docs/Web/Guide/HTML/Constraint_validation)”。
+
+我们还讨论了 HTTP 状态码。您可以在“HTTP 状态码”入门课程中了解更多👀。
+
+这是视频中的最终沙盒：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "styles.css": { code: secondStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+<Callout type='info' title='捕获意外错误'>
+
+在上面的例子中，我们通过检查 JSON 响应的值来处理预期的错误，但我们没有处理意外的错误。例如，如果服务器宕机，整个过程将抛出异常。
+
+为了防范这种情况，我们还应该将获取请求包裹在 try / catch 中：
+
+```jsx
+async function handleSubmit(event) {
+  event.preventDefault();
+
+  setStatus("loading");
+
+  //[!code highlight]
+  try {
+    const response = await fetch(ENDPOINT, {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        message,
+      }),
+    });
+    const json = await response.json();
+
+    if (json.ok) {
+      setStatus("success");
+      setMessage("");
+    } else {
+      setStatus("error");
+    }
+    //[!code highlight]
+  } catch (err) {
+    //[!code highlight]
+    setStatus("error");
+    //[!code highlight]
+  }
+}
+```
+
+</Callout>

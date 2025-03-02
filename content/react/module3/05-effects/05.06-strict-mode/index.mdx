@@ -1,0 +1,277 @@
+---
+title: 严格模式
+description: 严格模式
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstMediaPlayerJsCode from "./code/first/MediaPlayer.js.example";
+import firstIndexJsCode from "./code/first/index.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import firstResetCssCode from "./code/first/reset.css.example";
+import firstVisuallyHiddenJsCode from "./code/first/VisuallyHidden.js.example";
+
+import secondAppJsCode from "./code/second/App.js.example";
+import secondIndexJsCode from "./code/second/index.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+import secondClockJsCode from "./code/second/Clock.js.example";
+
+import thirdAppJsCode from "./code/third/App.js.example";
+import thirdIndexJsCode from "./code/third/index.js.example";
+
+在 React 中，有许多微妙的陷阱，这些东西可能会给我们的用户带来重大问题，但对于我们作为开发者而言却不一定明显。
+
+为了帮助我们发现和修复这些问题，React 团队引入了一种新的“严格模式”。
+
+为了启用“严格模式”，我们将应用程序包装在一个 React.StrictMode 元素中：
+
+```jsx
+import React from "react";
+
+root.render(
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
+);
+```
+
+这个元素在 React 内部切换一个开关，增加了一系列旨在提高我们应用程序可靠性的限制和保护措施。
+
+其中一个特别的调整颇具争议，并且导致了很多混乱。
+
+让我们谈谈这个。
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+我们正在查看之前的例子，将空格键快捷键添加到我们的媒体播放器中。
+
+假设我们移除清理函数：
+
+```jsx
+React.useEffect(() => {
+  function handleKeyDown(event) {
+    if (event.code === "Space") {
+      setIsPlaying((currentIsPlaying) => !currentIsPlaying);
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  //[!code highlight]
+  return () => {
+    //[!code highlight]
+    // Removed the cleanup:
+    //[!code highlight]
+    // window.removeEventListener('keydown', handleKeyDown);
+    //[!code highlight]
+  };
+}, []);
+```
+
+正如我们所讨论的，这引入了内存泄漏：
+
+- 每次这个组件被挂载时，我们都会添加另一个事件监听器，就像热饼一样堆叠起来
+- 因为 handleKeyDown 回调引用了组件实例的一部分 — setIsPlaying — 所以 JS 垃圾回收器无法清理这些实例。
+
+不过，问题在于：这些问题非常微妙，因为它们只在长时间运行的进程中或在内存非常有限的机器上出现。即使我们卸载/重新挂载组件几次，我们在测试时也可能不会注意到任何性能问题。
+
+而且没有其他线索；没有lint警告，没有控制台错误。
+
+我们首先感觉到有问题的线索可能是在我们部署这段代码的几天或几周后。我们的支持团队将开始看到诸如“为什么这个媒体播放器占用了我电脑 90%的内存？”或“为什么这个媒体播放器让我的风扇像喷气发动机一样运转？”的工单。
+
+让我告诉你，作为一个经历过支持轮班并且不得不追踪这样的漏洞的人：这一点都不好玩。
+
+为了帮助我们在开发中发现这些问题，React 团队引入了严格模式。
+
+要启用严格模式，我们在应用程序周围包裹 React.StrictMode 元素。这在 React 内部翻转了一条开关。
+
+启用严格模式后，这个细微的问题变成了一个严重的问题：空格键快捷键似乎完全无法使用！
+
+要解释这里发生了什么：严格模式会自动重新运行所有Effect。因此，以下代码会执行两次，而不是一次：
+
+```jsx
+function handleKeyDown(event) {
+  if (event.code === "Space") {
+    setIsPlaying((currentIsPlaying) => !currentIsPlaying);
+  }
+}
+
+window.addEventListener("keydown", handleKeyDown);
+```
+
+因此，我们注册了两个事件监听器，它们都连接到同一个组件实例。当我们按下“空格”键时，我们调用 setIsPlaying(!false) ，将其设置为 true ... 但随后我们立即再次调用它，将其设置回 false 。
+
+为了解决这个问题，我们可以重新实现我们的清理函数：
+
+```jsx
+React.useEffect(() => {
+  function handleKeyDown(event) {
+    if (event.code === "Space") {
+      setIsPlaying((currentIsPlaying) => !currentIsPlaying);
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  //[!code highlight]
+  return () => {
+    //[!code highlight]
+    window.removeEventListener("keydown", handleKeyDown);
+    //[!code highlight]
+  };
+}, []);
+```
+
+在“普通”模式下，操作顺序如下：
+
+- 挂载
+- 运行Effect
+
+在严格模式下，序列是：
+
+- 挂载
+- 运行Effect
+- 运行清理
+- 重新运行Effect
+
+React 团队特别添加了这种行为，以帮助暴露像这样的微妙问题。如果没有清理函数，如果我们尝试运行它们两次，许多事情将会崩溃！
+
+你可能在想：运行所有Effect两次不是很昂贵吗？这会影响性能吗？
+
+答案是肯定的，但带有一个星号。
+
+严格模式仅影响开发环境。在生产环境中没有Effect。这意味着，当我们打包和部署应用程序时，严格模式是无操作（no-op）。它不执行任何操作。
+
+到目前为止，在本课程中，我们还没有使用严格模式，因为这确实会使事情变得有些复杂，而 useEffect 在我们刚开始学习时已经足够复杂了。但现在我们已经掌握了基础，我认为值得切换到严格模式。
+
+它肯定会使某些情况变得更加具有挑战性，但要记住的是，严格模式并不导致问题，它只是暴露了问题。严格模式将微妙的错误变成显而易见的问题。从长远来看，严格模式应该让我们的生活更轻松，而不是更困难。
+
+</Accordion>
+
+</Accordions>
+
+这是上面视频中的沙箱：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "MediaPlayer.js": firstMediaPlayerJsCode,
+    "index.js": firstIndexJsCode,
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+    "reset.css": { code: firstResetCssCode, hidden: true },
+    "VisuallyHidden.js": { code: firstVisuallyHiddenJsCode, hidden: true },
+  }}
+  customSetup={{
+    dependencies: {
+      "react-feather": "latest",
+    },
+  }}
+  template="react"
+/>
+
+## 关于严格模式的更多信息
+
+除了重新运行所有Effect，严格模式还改变了许多其他内容。我们可以将这些变化分为两类：
+
+- 旨在放大潜在问题的保障措施
+- 关于弃用 API 的警告
+
+除非你在一个遗留代码库中工作（至少有 5 年历史），否则你不太可能遇到任何弃用警告。
+
+但你可能会注意到一些保护措施，比如我们上面提到的关于重复Effect的那个。在撰写本文时，这些保护措施都遵循相同的模式：运行两次。
+
+例如，在严格模式下，每次渲染会自动重新执行。如果我们再看看启用了严格模式的数字时钟示例，我们会注意到每次重新渲染都会发生两次：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "Clock.js": secondClockJsCode,
+    "index.js": { code: secondIndexJsCode, hidden: true },
+    "styles.css": { code: secondStylesCssCode, hidden: true },
+    "reset.css": { code: firstResetCssCode, hidden: true },
+  }}
+  customSetup={{
+    dependencies: {
+      "date-fns": "latest",
+      "react-feather": "latest",
+    },
+  }}
+  template="react"
+/>
+
+如果你有兴趣，可以通过[阅读官方文档](https://react.dev/reference/react/StrictMode)查看严格模式更改的完整列表。
+
+## 新的默认值
+
+虽然严格模式在技术上是可选的“自愿加入”模式，但它迅速成为使用 React 的标准方式。几乎每个样板和元框架默认都会使用严格模式！
+
+我想确保你正在学习“真实世界”的 React，而大多数真实世界的项目都使用严格模式。因此，从现在开始，严格模式将在这个课程平台上默认启用。
+
+我在沙箱中添加了一个小开关，它将显示严格模式是否启用，并允许你开启它：
+
+(本文档暂时没有实现, 自己该index.js喏)
+
+在这里亲自试一下！当启用严格模式时，您应该看到两个“Mount check!”的控制台日志，而当禁用时，只会看到一个：
+
+<Sandpack
+  files={{
+    "App.js": thirdAppJsCode,
+    "index.js": thirdIndexJsCode,
+  }}
+  template="react"
+/>
+
+一般来说，我建议将严格模式保持开启。该开关是为了故障排除而提供的。
+
+## 模拟严格模式
+
+在我开发这个课程时，我想到一个问题：是否可以通过卸载/重新安装组件来“模拟”这个严格模式的怪癖？
+
+好吧，让我们探索一下：
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+在严格模式下，发生以下序列：
+
+- Effect
+- 清理（如果提供）
+- Effect
+
+如果我们禁用严格模式，而是卸载/重新挂载组件呢？这将导致完全相同的操作顺序：
+
+- Effect
+- 清理（如果提供）
+- Effect
+
+好吧，如果我们试一试，我们会发现不，这不是同一回事。如果我们遵循这种方法，键盘快捷键仍然有效。
+
+但有什么不同？
+
+老实说，我不知道。幸运的是，React 核心团队的一位热心成员能够告诉我。
+
+区别在于：严格模式实际上并不会卸载/重新安装组件。这意味着只有一个组件实例，我们调用Effect函数两次。
+
+当我们卸载并重新安装组件时，我们会创建一个全新的组件实例，具有其自己的 isPlaying 内部状态。
+
+查看下面的图表，它们说明了差异。
+
+另一种解释方式：假设我们点击一次“切换媒体播放器”按钮，将其卸载。我们已经运行了Effect和清理函数。我们的事件监听器仍然存在，但空格键没有任何反应；这是因为没有更多的 MediaPlayer 。我们正在切换一个不再处于活动状态的组件的状态。没有 \<audio> 标签可以播放！
+
+当我们再次点击“切换媒体播放器”按钮时，我们会挂载一个新的 MediaPlayer 组件实例，带有一个新的 isPlaying 状态变量，并创建一个新的事件监听器。旧的事件监听器仍然存在，但实际上是无操作的。因此，事情仍然正常运作（尽管我们引入了内存泄漏）。
+
+</Accordion>
+
+</Accordions>
+
+这里是视频中的插图：
+
+**严格模式：**
+
+![strict-mode-effect](/react/module3/strict-mode-effect.svg)
+
+**严格模式（模拟）：**
+
+![strict-mode-effect-simulated](/react/module3/strict-mode-effect-simulated.svg)

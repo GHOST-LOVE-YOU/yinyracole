@@ -1,0 +1,105 @@
+---
+title: 构建自己的 React
+description: 构建自己的 React
+---
+
+import indexHtmlCode from "./code/index.html.example";
+import indexJsCode from "./code/index.js.example";
+
+学习某样东西是如何运作的最好方法之一，就是自己制作一个简化版。
+
+在本练习中，您将创建一个 render 函数，该函数接受 React 元素并产生等效的 DOM 结构！
+
+为了尽可能简单，我们不会使用上一课讨论的 createRoot API。相反，我们将编写一个 render 函数，该函数接受两个参数：
+
+1. React 元素，描述我们想要的用户界面。
+2. 一个将容纳我们应用程序的目标 DOM 节点。
+
+这旨在成为一个具有挑战性的练习。如果你无法解决它，这完全没问题。花 5-10 分钟在上面，然后观看下面的视频。
+
+接受标准<abbr title="这是完成练习必须满足的条件">？</abbr>
+
+“结果(Result)”窗格应显示由 React 元素描述的用户界面。它应包含一个链接到维基百科的锚标签，并包含文本“在维基百科上阅读更多”。
+
+它应该适用于任何元素类型（例如，锚点、段落、按钮…）
+
+它应该处理所有 HTML 属性（例如 href ， id ， disabled …）
+
+该元素应包含在 children 下指定的文本。 children 将始终是一个字符串。
+
+<Callout title="与 DOM 交互">
+为了应对这个挑战，你需要了解如何与 DOM 互动，例如创建 DOM 元素并将它们附加到页面上。
+
+我们将在“与 DOM 交互👀”参考课程(其他章节)中涵盖你所需的所有方法。
+
+</Callout>
+
+<Sandpack
+  files={{
+    "index.js": {
+      code: indexJsCode,
+      active: true,
+    },
+    "index.html": indexHtmlCode,
+  }}
+  template="react"
+/>
+
+<Accordions>
+  <Accordion title="解决方案代码">
+    ```js
+    function render(reactElement, containerDOMElement) {
+      // 1. create a DOM element
+      const domElement = document.createElement(reactElement.type);
+
+    // 2. update properties
+    domElement.innerText = reactElement.children;
+    for (const key in reactElement.props) {
+    const value = reactElement.props[key];
+    domElement.setAttribute(key, value);
+    }
+
+    // 3. put it in the container
+    containerDOMElement.appendChild(domElement);
+    }
+    ```
+
+  </Accordion>
+</Accordions>
+
+## 富有成效的失败
+
+所以，你刚刚尝试了课程的第一个练习！进展如何？
+
+我怀疑这可能相当棘手，除非你已经熟悉 DOM 交互方法。你可能没有成功完成它。你可能感到有些沮丧或失望。
+
+如果是这样，我有个好消息告诉你：你可能从这个练习中学到了比你想象的要多得多！
+
+大多数在线课程在一开始就会提供你所需的一切。你可以跟着老师编码，轻松自如地完成练习。一个月后，你将不会记得其中的任何内容。
+
+事实证明，挣扎和失败是快速学习新技能的最有效方法之一！
+
+在学术界，这被称为富有成效的失败。以下是 2019 年一篇科学文章中的引用：
+
+> 在《建设性失败》中，传统的教学过程被颠倒，学习者在接受明确指导之前尝试解决具有挑战性的问题。尽管学生往往无法提出令人满意的解决方案（因此称为“失败”），但这些尝试有助于学习者编码关键特征，并从随后的指导中获得更好的学习效果（因此称为“建设性”）。
+
+换句话说：如果你在解决一个问题时挣扎，放弃，然后观看解决方案视频，你更有可能完全理解和记住这些内容。这就是我们建立持久、通用技能的方式！
+
+当然，挣扎可能会让人泄气。这可能会触发我们的冒名顶替综合症，让我们怀疑自己。但这是一种错误的解读！这只是意味着你正在面临挑战，正在尝试超出你当前能力范围的问题。这是最有效的学习方式！挣扎并不意味着你无能，而是意味着你在成长！
+
+当我在可汗学院工作时，我们经常讨论“成长型思维”的重要性。成长型思维是一种信念，认为我们的脑筋是有弹性的，通过实践我们会变得更聪明，而失败是学习的最快方式。这种思维模式对开发者而言是一种超级能力。就我个人而言，它对我的发展和职业生涯产生了巨大的影响。
+
+所以，这门课程旨在具有挑战性，尤其是对初学者来说。这不会全是一场挣扎——毕竟我希望我们能玩得开心！但偶尔，练习和项目会促使你超越我们在课程中学到的内容。
+
+您可以在 Carol Dweck 于 Google 演讲的这场讲座中了解更多关于培养成长心态的内容：["Mindset: The New Psychology of Success"](https://www.youtube.com/watch?v=-71zdXCMU6A)。
+
+<Callout title="这门课程是为你准备的">
+我记得在高中参加考试。老师们在课桌之间走动，俯视着我们，确保我们没有试图作弊。
+
+这门课程不是这样的。我不是一个专制的管事者。这是你的课程，你应该随心所欲地使用它。
+
+如果你愿意，可以先观看解决方案视频，然后尝试重建解决方案。或者，你也可以在观看视频的同时编写代码。没有错误的方法。
+
+这可能没有我谈到的“富有成效的失败”那么有效，但绝对比说放弃要有效得多！
+
+</Callout>

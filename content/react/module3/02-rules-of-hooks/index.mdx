@@ -1,0 +1,167 @@
+---
+title: Hooks 规则
+description: Hooks 规则
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondTextInputJsCode from "./code/second/TextInput.js.example";
+
+所以，我们已经讨论过钩子是允许我们“钩入”React 内部的特殊函数。 useState 允许我们连接到组件实例的状态，例如，而 useId 允许我们在组件实例上创建并存储一个唯一标识符。
+
+如果我们尝试在 React 上下文之外调用这些函数，会发生什么？
+
+好吧，我们试试看：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+  }}
+  template="react"
+/>
+
+除了 lint 错误，我们还收到了一个看起来像这样的控制台消息：
+
+<Callout type="error">
+
+警告：无效的钩子调用。钩子只能在函数组件的主体内部调用。这可能是由于以下原因之一：
+
+1. 您可能有不匹配的 React 和渲染器（例如 React DOM）版本
+2. 您可能正在违反 Hooks 规则
+3. 你可能在同一个应用中有多个 React 副本
+
+</Callout>
+
+这表明出现了严重的问题，并提供了三种可能性。错误 1 和错误 3 涉及罕见的边缘案例问题，但第二个要点很有趣。“Hooks 的规则”是什么？
+
+首先，让我们明白，hooks 就是普通的 JavaScript 函数。它们并不像看起来那么神奇。
+
+但是，当我们调用这些函数时，它们会“钩入”React 内部。我们可以让 React 措手不及。它期望这些钩子函数以非常特定的方式使用，如果我们违反这些期望，就会发生坏事。
+
+我们应该了解两个“钩子规则”，以确保我们始终按照 React 的预期使用钩子。
+
+1. Hooks 必须在 React 应用程序的范围内调用。我们不能在 React 组件之外调用它们。<abbr title="例外是我们可以在自定义钩子里调用钩子.我们将之后讨论.">\*</abbr>
+2. 我们必须在组件的顶层调用我们的钩子。
+
+第二条规则是让大多数人感到困惑的那条。我们来谈谈它。
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+假设我们有以下代码：
+
+```jsx
+function TextInput({ id, label, type }) {
+  let appliedId = id;
+
+  if (typeof appliedId === "undefined") {
+    appliedId = React.useId();
+  }
+
+  return (
+    <div className="text-input">
+      <label htmlFor={appliedId}>{label}</label>
+      <input id={appliedId} type={type} />
+    </div>
+  );
+}
+```
+
+TextInput 组件接受一个可选的 id 属性。如果没有提供，我们将自动生成一个。
+
+这似乎是世界上最合理的事情，但这里有一个大问题：我们违反了钩子的规则之一。
+
+规则规定我们不允许有条件地使用钩子。我们绝不能把钩子放在 if 条件、 switch 语句、 for 循环，甚至回调内部。
+
+这似乎很武断，是吗？
+
+解释这个规则存在的原因需要深入探讨，我现在不想深入，但我们可以快速讨论一下整体思路。
+
+假设我们正在构建一个具有两个状态的组件：
+
+```jsx
+function TextInput({ id, label, type }) {
+  const [x, setX] = React.useState();
+  const [y, setY] = React.useState();
+}
+```
+
+我们调用 useState() 两次，因为我们有两个不同的状态变量。
+
+问题是：React 是如何知道我们请求的是哪一部分状态的？
+
+注意，我们没有给 React 每个状态部分提供任何独特的 ID。我们没有这样做：
+
+```jsx
+const [x, setX] = React.useState({ id: "x" });
+const [y, setY] = React.useState({ id: "y" });
+```
+
+React 使用函数调用的顺序来确定为每个钩子提供哪个状态。
+
+如果我们渲染一个组件 100 次，它应该以完全相同的顺序调用完全相同的钩子。当我们有条件地渲染一个钩子时，我们使得钩子在一次渲染到另一次渲染之间发生变化成为可能！
+
+这导致了非常混乱的错误，其中 y 变量可能被分配到 x 状态。
+
+这条规则适用于所有钩子，而不仅仅是 useState 。
+
+那么我们如何解决最初的问题呢？这是解决方案：
+
+```jsx
+function TextInput({ id, label, type }) {
+  let generatedId = React.useId();
+  let appliedId = id || generatedId;
+
+  return (
+    <div className="text-input">
+      <label htmlFor={appliedId}>{label}</label>
+      <input id={appliedId} type={type} />
+    </div>
+  );
+}
+```
+
+在这个修订版本中，无论他们是否提供了 ID，我们始终调用 React.useId() 。
+
+即使我们不需要生成 ID，这似乎有些浪费，但幸运的是，这个过程非常快速。它对性能没有明显影响。
+
+</Accordion>
+
+</Accordions>
+
+这是视频中的沙盒：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "TextInput.js": secondTextInputJsCode,
+  }}
+  template="react"
+/>
+
+<Callout title="缺少了什么">
+
+在这个例子中，我们的 TextInput 组件缺少一些非常重要的属性： value 和 onChange 。没有这些属性，就无法使用 React 状态驱动这个组件。
+
+我没有包括它们，因为它们与本课无关，但如果你想在你的应用中使用受控输入，它们是非常重要的！
+
+这是一个更完整的实现：
+
+```jsx
+function TextInput({ id, label, type, value, onChange }) {
+  let generatedId = React.useId();
+  let appliedId = id || generatedId;
+
+  return (
+    <div className="text-input">
+      <label htmlFor={appliedId}>{label}</label>
+      <input id={appliedId} type={type} value={value} onChange={onChange} />
+    </div>
+  );
+}
+```
+
+在本课程的后面，我们将学习如何在这种情况下自动委派 props。
+
+</Callout>

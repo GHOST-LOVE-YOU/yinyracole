@@ -1,0 +1,173 @@
+---
+title: 自定义钩子
+description: 自定义钩子
+---
+
+import AppJsCode from "./code/App.js.example";
+import ClockJsCode from "./code/Clock.js.example";
+import indexJsCode from "./code/index.js.example";
+import stylesCssCode from "./code/styles.css.example";
+
+React 支持自定义钩子。这意味着除了 React 附带的钩子，如 useState 和 useEffect ，我们可以创建自己的钩子，像 useInterval 和 useOnScroll 。
+
+自定义钩子是 React 钩子最棒的部分。它们让整个 API 发光，老实说，我一直在焦急地等待我们达到课程的这一点，以便可以与您分享它们！
+
+如果你一直在苦苦理解为什么人们喜欢钩子，希望这节课能让你明白！😄
+
+## 并没有听起来那么可怕
+
+首先要明白的是，我们并不是在真正发明自己的钩子。
+
+当我第一次听到“自定义钩子”这个术语时，感觉非常吓人，就像只有最先进的高级用户才会使用的东西。使用默认钩子时，钩子已经够难了！
+
+我意识到关键时刻是当我开始把它们视为自定义钩子组合时。
+
+让我们来看一个例子。
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+在过去的几节课中，我们一直在面对现代 React 中一些最棘手的部分。 useEffect 钩子是出了名的棘手！
+
+虽然钩子确实有其缺点，但它们有一个令人难以置信的优点：能够创建自定义钩子。
+
+在这个视频中，我们重新回顾了之前看到的一个练习，我们的数字时钟：
+
+```jsx
+import React from "react";
+import format from "date-fns/format";
+
+function Clock() {
+  const [time, setTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  return <p className="clock">{format(time, "hh:mm:ss a")}</p>;
+}
+```
+
+自定义钩子允许我们将多个钩子打包成一个。以下是它的样子：
+
+```jsx
+function Clock() {
+  const time = useTime();
+
+  return <p className="clock">{format(time, "hh:mm:ss a")}</p>;
+}
+
+function useTime() {
+  const [time, setTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    // Effect logic
+    const intervalId = window.setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => {
+      // Cleanup logic
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  return time;
+}
+```
+
+我创建了一个名为 useTime 的新函数，这个函数管理与 time 状态相关的一切，包括保持其最新状态的Effect！
+
+该函数返回 time 状态变量，因为这就是在 Clock 组件内部所需的内容：
+
+```jsx
+const time = useTime();
+```
+
+自定义 hooks 有两个优点：
+
+1. 代码组织。通过将状态/Effect移出组件，可以更容易理解 Clock 组件的作用。通过给钩子命名为 useTime ，我们可以清楚它的功能。
+2. 代码重用。因为我已将这个逻辑移入自己的函数中，我可以与其他组件共享该函数。如果任何组件需要以一种与 React 状态自动集成的方式知道现在几点钟，我所要做的就是导入这个函数。
+
+乍一看，这似乎并不那么令人印象深刻。毕竟，我们已经可以通过使用普通的 JavaScript 函数在组件之间共享逻辑。那么，“自定义钩子”有什么特别之处呢？
+
+确实，常规函数让我们可以重用逻辑，但我们再来看一下这个自定义钩子。
+
+我已经强调了那些是“纯 JS”逻辑的行：
+
+```jsx
+function useTime() {
+  const [time, setTime] = React.useState(
+    //[!code highlight]
+    new Date(),
+  );
+
+  React.useEffect(() => {
+    // Effect logic
+    const intervalId = window.setInterval(() => {
+      setTime(new Date());
+      //[!code highlight]
+    }, 1000);
+
+    return () => {
+      // Cleanup logic
+      //[!code highlight]
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  return time;
+}
+```
+
+我们确实有一些“纯” JS 的东西——创建 Date() 对象，启动定时器——但大多数内容是“React 逻辑”。
+
+使自定义钩子特别的原因是它们与 React 生命周期集成。
+
+我们的 useTime 钩子并不是为了根据某些输入计算输出而设计的，就像一个典型的纯 JS 函数。相反，它创建了一个 React 状态变量，并管理一个长时间运行的间隔，包括在父组件卸载时清理它。这不是一个典型 JS 函数能做到的事情。
+
+一个最终的注意事项：你的自定义 Hook 需要以“use”开头。例如，如果我们将我们的自定义 Hook 重命名为 getTime ，那么我们会看到如下的 lint 警告：
+
+<Callout type='error' title='警告'>
+
+React Hook "React.useState" is called in function "getTime" that is neither a React function component nor a custom React Hook function.
+
+React Hook "React.useState" 被调用于函数 "getTime"，而该函数既不是 React 函数组件，也不是自定义 React Hook 函数。
+
+</Callout>
+
+（此 lint 警告在视频中未显示，因为在拍摄该视频时，我尚未将 linter 集成到游乐场中。）
+
+还记得我们谈论钩子的规则吗？第一条规则是：
+
+1. Hooks 必须在 React 应用程序的范围内调用。我们不能在 React 组件之外调用它们。
+
+这个规则的唯一例外是自定义钩子。如果一个函数是自定义钩子，我们可以在该函数中使用 React 钩子，如 useState 和 useEffect 。我们通过以“use”开头来声明一个函数是自定义钩子，并确保它遵循钩子的规则（例如，我们不能在组件中有条件地调用 useTime ）。
+
+</Accordion>
+
+</Accordions>
+
+这是上面视频中的代码：
+
+<Sandpack
+  files={{
+    "App.js": AppJsCode,
+    "Clock.js": ClockJsCode,
+    "index.js": { code: indexJsCode, hidden: true },
+    "styles.css": { code: stylesCssCode, hidden: true },
+  }}
+  customSetup={{
+    dependencies: {
+      "date-fns": "latest",
+    },
+  }}
+  template="react"
+/>

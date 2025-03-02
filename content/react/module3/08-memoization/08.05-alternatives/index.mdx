@@ -1,0 +1,197 @@
+---
+title: 替代方案
+description: 替代方案
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstClockJsCode from "./code/first/Clock.js.example";
+import firstPrimeCalculatorJsCode from "./code/first/PrimeCalculator.js.example";
+import firstUseTimeJsCode from "./code/first/use-time.js.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondClockJsCode from "./code/second/Clock.js.example";
+import secondPrimeCalulatorJsCode from "./code/second/PrimeCalulator.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+在 useMemo 课程中，我们看到 useMemo 钩子如何缓存高开销计算的结果，例如生成素数时：
+
+```jsx
+function App() {
+  const [selectedNum, setSelectedNum] = React.useState(100);
+  const time = useTime();
+
+  //[!code highlight]
+  const allPrimes = React.useMemo(() => {
+    //[!code highlight]
+    const result = [];
+    //[!code highlight]
+
+    //[!code highlight]
+    for (let counter = 2; counter < selectedNum; counter++) {
+      //[!code highlight]
+      if (isPrime(counter)) {
+        //[!code highlight]
+        result.push(counter);
+        //[!code highlight]
+      }
+      //[!code highlight]
+    }
+    //[!code highlight]
+
+    //[!code highlight]
+    return result;
+    //[!code highlight]
+  }, [selectedNum]);
+
+  return (
+    <>
+      <p className="clock">{format(time, "hh:mm:ss a")}</p>
+      <form>
+        <label htmlFor="num">Your number:</label>
+        <input
+          type="number"
+          value={selectedNum}
+          onChange={(event) => {
+            // To prevent computers from exploding,
+            // we'll max out at 100k
+            let num = Math.min(100_000, Number(event.target.value));
+
+            setSelectedNum(num);
+          }}
+        />
+      </form>
+      <p>
+        There are {allPrimes.length} prime(s) between 1 and {selectedNum}:{" "}
+        <span className="prime-list">{allPrimes.join(", ")}</span>
+      </p>
+    </>
+  );
+}
+```
+
+这完全是合理的，但如果我们退一步来看这个组件……我们真的在以最佳方式解决这个问题吗？
+
+这个 App 组件似乎在管理两个完全不相关的任务：
+
+1. 运行数字时钟。
+2. 素数的内容，选择一个数字并显示相关的素数。
+
+如果我们将它们分成两个独立的组件呢？
+
+例如：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "Clock.js": firstClockJsCode,
+    "PrimeCalculator.js": firstPrimeCalculatorJsCode,
+    "use-time.js": firstUseTimeJsCode,
+  }}
+  customSetup={{
+    dependencies: {
+      "date-fns": "latest",
+    },
+  }}
+  template="react"
+/>
+
+我提取了两个新组件， Clock 和 PrimeCalculator 。因为它们现在是兄弟关系，所以在 Clock 中的更新不会影响 PrimeCalculator 。
+
+这是一个显示这种动态的图表。每个框代表一个组件实例，当它们重新渲染时会闪烁。尝试单击“增量”按钮以查看其工作情况：
+
+<video controls loop muted playsInline width="50%">
+  <source
+    src="/react/module3/render-with-split-component.mp4"
+    type="video/mp4"
+  />
+</video>
+
+我们经常听到关于提升状态的讨论，但有时，更好的方法是将状态向下推！每个组件都应该有单一的职责，在上面的例子中， App 做了两个完全无关的事情。
+
+现在，这并不总是一个选项。在一个大型的现实应用中，有很多状态需要提升到很高的层级，而无法往下推。
+
+我还有一个应对这种情况的妙招。
+
+让我们看一个例子。假设我们需要将 time 变量提升到 PrimeCalculator 之上：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "Clock.js": secondClockJsCode,
+    "PrimeCalculator.js": secondPrimeCalulatorJsCode,
+    "styles.css": { code: secondStylesCssCode, hidden: true },
+  }}
+  customSetup={{
+    dependencies: {
+      "date-fns": "latest",
+    },
+  }}
+  template="react"
+/>
+
+我们使用 time 变量来控制背景颜色。为了实现这一点，我们将 time 状态提升到父级 App 组件。
+
+通过此更改， PrimeCalculator 将在 time 每次变化时再次渲染，每秒一次。
+
+我们可以再次使用 useMemo 钩子来解决这个问题，但我有另一个想法。如果我们对整个组件进行记忆化呢？
+
+```jsx
+// PrimeCalculator.js
+function PrimeCalculator() {
+  // Unchanged
+}
+
+export default React.memo(PrimeCalculator);
+```
+
+正如我们在“为什么 React 重新渲染”课程中所学到的， React.memo 像一个力场一样包裹着我们的组件，保护它不受无关更新的影响。我们的 PrimeCalculator 组件只有在其 props 或 state 发生变化时才会重新渲染。
+
+因为它没有任何属性，这个组件重新渲染的唯一方式是如果 selectedNum 状态发生变化。
+
+这里有一个有趣的视角转变：之前，我们是记忆特定计算的结果，计算素数。然而在这种情况下，我却记忆了整个组件。
+
+无论如何，昂贵的计算部分只会在用户选择新的 selectedNum 时重新运行。但我们优化了父组件，而不是特定的慢行代码。
+
+这是一个更新的图表，显示这里发生的情况：
+
+<video controls loop muted playsInline width="50%">
+  <source src="/react/module3/render-wrap-app-graph.mp4" type="video/mp4" />
+</video>
+
+明确来说，我并不是在说 useMemo 是坏的，或者我们应该总是尝试寻找替代方案。我希望表达的观点是，我们应该关注应用程序结构；当我们重构代码以提高可读性时，通常会免费获得性能上的好处，并且可能会发现 useMemo 并不是必需的！
+
+话虽如此， useMemo 在工具箱中仍然是一个宝贵的工具。在这个课程平台上，我使用 useMemo 几十次！
+
+我意识到这节课相当高级——随着时间的推移，在你的 React 旅程中，你会开始看到重构代码和改善结构的机会，但达到这一点需要大量的练习。我希望这些想法能在你脑海中潜移默化，随着我们继续进行课程。
+
+</Accordion>
+
+</Accordions>
+
+这是上面视频中的互动图表：
+
+**Sibling Clock 和 PrimeCalculator:**
+
+<video controls loop muted playsInline width="50%">
+  <source
+    src="/react/module3/render-with-split-component.mp4"
+    type="video/mp4"
+  />
+</video>
+
+**纯素数计算器，提升的 time 状态：**
+
+<video controls loop muted playsInline width="50%">
+  <source src="/react/module3/render-wrap-app-graph.mp4" type="video/mp4" />
+</video>
+
+<Callout type='info' title='更多选择'>
+
+在他的博客文章“[在你使用 memo() 之前](https://overreacted.io/before-you-memo/)”，React 核心团队成员 Dan Abramov 分享了另一种基于使用 children 重构应用程序的方法，以避免需要进行任何记忆化。
+
+我们将在课程稍后讨论这种方法，当我们学习如何提升内容时。
+
+</Callout>

@@ -1,0 +1,82 @@
+---
+title: 纯组件
+description: 纯组件
+---
+
+import AppJsCode from "./code/App.js.example";
+import BigCountNumberJsCode from "./code/BigCountNumber.js.example";
+import CounterJsCode from "./code/Counter.js.example";
+import DecorationJsCode from "./code/Decoration.js.example";
+import stylesCssCode from "./code/styles.css.example";
+
+在上一节课中，我们看到当一个组件的父组件重新渲染时，它会自动重新渲染，无论它的 props 是否发生了变化。
+
+在大型应用中，这可能导致性能问题。单个状态变化可能重新渲染几十个甚至上百个组件，即使实际上只有其中一小部分需要重新渲染。
+
+幸运的是，React 提供了我们可以使用的逃生口： React.memo 工具。
+
+这看起来是这样的：
+
+```jsx
+function Decoration() {
+  return <div className="decoration">⛵️</div>;
+}
+
+//[!code highlight]
+const PureDecoration = React.memo(Decoration);
+//[!code highlight]
+
+//[!code highlight]
+export default PureDecoration;
+```
+
+React.memo 是一个工具，可以让我们告诉 React：“嘿，这个组件是纯的！只有当它的 props 或 state 发生变化时，它才需要重新渲染。当给定相同的 props + state 时，它将始终返回完全相同的 UI。”
+
+它接受一个组件作为参数 ( Decoration ) 并增强它，赋予它一种新的超能力：它可以选择性地忽略那些对它没有影响的重新渲染。
+
+当父组件重新渲染时，React 会尝试重新渲染子组件 PureDecoration ，但 PureDecoration 介入并说：“我的属性没有改变，所以这次我不会重新渲染。”
+
+这使用了一种称为记忆化(memoization)的技术。
+
+缺少了 R，但我们可以将其视为“记忆”。这个想法是 React 会记住之前的快照。如果没有任何 props 发生变化，React 会重用那个过时的快照，而不是费力生成一个全新的快照。
+
+假设我用 React.memo 辅助函数包裹 BigCountNumber 和 Decoration 。这将如何影响渲染：
+
+<video controls loop muted playsInline width="50%">
+  <source src="/react/module3/render-with-memo-graph.mp4" type="video/mp4" />
+</video>
+
+当 count 变化时，我们重新渲染 Counter ，React 会尝试渲染两个子组件。
+
+因为 BigCountNumber 将 count 作为一个属性，并且因为那个属性已经改变，所以 BigCountNumber 被重新渲染。但是因为 Decoration 的属性没有改变（因为它没有任何属性），所以使用了原始快照。
+
+我喜欢假装 React.memo 有点像一个懒惰的摄影师。如果你让它拍 5 张完全相同的照片，它只会拍 1 张照片并给你 5 个副本。摄影师只有在你的指示改变时才会拍摄新照片。
+
+这是一个实时代码版本，如果你想自己动手试试的话。每个备忘录组件都有一个 console.info 调用，因此你可以在控制台中准确看到每个组件渲染的时刻：
+
+<Sandpack
+  files={{
+    "App.js": AppJsCode,
+    "BigCountNumber.js": BigCountNumberJsCode,
+    "Counter.js": CounterJsCode,
+    "Decoration.js": DecorationJsCode,
+    "styles.css": stylesCssCode,
+  }}
+  template="react"
+/>
+
+总结：
+
+- 在 React 中重新渲染任何内容的唯一方法是通过调用状态设置函数（例如 setCount ）来更新状态变量。
+- 当组件重新渲染时，它会自动重新渲染其所有后代，即使它们的属性没有任何变化。
+- 我们可以用 React.memo 包裹我们的组件以进行优化，这样只有当它的 props 中至少有 1 个在上次渲染后发生变化时，它才会重新渲染。
+
+<Callout type='info' title='为什么这不是默认行为??'>
+
+您可能在想，为什么 React.memo 的行为不是默认值。如果我们跳过不需要渲染的组件，肯定会提高性能吧？
+
+我认为作为开发者，我们往往高估了重新渲染的成本。在我们的 Decoration 组件的情况下，重新渲染非常快速。如果一个组件有很多属性但后代不多，那么检查任何属性是否已更改实际上可能比重新渲染组件更慢。<abbr title="我没有证据佐证这个说法, 但是我已经看到杰出的开发者像Dan Abramov在推特上表达这种观点">\*</abbr>
+
+因此，官方建议在尝试解决性能问题时，根据需要使用 React.memo 。您不应该需要提前应用它。
+
+</Callout>

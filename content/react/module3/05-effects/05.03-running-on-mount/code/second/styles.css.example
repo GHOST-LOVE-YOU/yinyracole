@@ -1,0 +1,19 @@
+html, body, #root {
+  height: 100%;
+}
+body {
+  padding: 0px;
+  background: hsl(250deg 80% 85%);
+}
+
+.wrapper {
+  height: 200px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+p {
+  font-size: 2.5rem;
+  font-family: monospace;
+}

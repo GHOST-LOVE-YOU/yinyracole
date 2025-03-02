@@ -1,0 +1,116 @@
+---
+title: 状态设置回调
+description: 状态设置回调
+---
+
+在上一课中，我们学习了一种设置 React 状态的新方法。这是一个重要的概念，我们将在接下来的课程和模块中使用，因此我想更深入地讲解它。
+
+到目前为止，在本课程中，我们通过调用状态设置函数并传入新值来更新状态：
+
+```jsx
+const [count, setCount] = React.useState(0);
+
+// sets `count` to `100`
+setCount(100);
+```
+
+状态更新还有另一种语法。如果我们愿意，可以传递一个回调函数，React 会为我们调用该函数：
+
+```jsx
+const [count, setCount] = React.useState(0);
+
+// sets `count` to `100`:
+setCount(() => {
+  return 100;
+});
+```
+
+从这个函数返回的任何内容都会成为状态的新值，就如同我们直接传递了那个值一样。
+
+这很有用，因为 React 提供了当前值：
+
+```jsx
+const [count, setCount] = React.useState(0);
+
+setCount((currentCount) => {
+  return currentCount + 1;
+});
+```
+
+在大多数情况下，这并不是必要的，因为我们已经可以访问 count 变量。但是，在处理效果时，我们可能会失去对状态变量最新版本的访问权限。
+
+在上节课中，我们看到这种替代语法如何是有用的一个例子：
+
+```jsx
+const [isPlaying, setIsPlaying] = React.useState(false);
+
+React.useEffect(() => {
+  function handleKeyDown(event) {
+    if (event.code === "Space") {
+      // Grab the *current value* of `isPlaying` from React:
+      setIsPlaying((currentIsPlaying) => {
+        return !currentIsPlaying;
+      });
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+
+  // No dependency on `isPlaying`!
+}, []);
+```
+
+此效果仅在第一次渲染后运行，因为我们指定了一个空的依赖数组。这意味着在效果中， isPlaying 始终等于 false 。
+
+每个渲染都是时间的快照。我们正在创建一个常量 isPlaying ，并将其初始化为 false 。基础状态变量可能会改变，但这种变化只会反映在未来的快照中。由于我们的效果没有任何依赖关系，当这种情况发生时，效果不会重新运行。
+
+因此，我们不再试图读取第一次渲染中创建的 isPlaying 常量，而是给 React 一个回调函数，React 会为我们调用该函数，并传入状态变量的当前值。
+
+我意识到这非常令人困惑😅。这是 React 中最棘手的概念之一。如果你还不太明白，这完全没问题。我保证随着你在 React 中练习得更多，这个概念会开始变得清晰。
+
+## 何时使用回调语法
+
+大多数时候，我们不需要使用回调语法。在我看来，这种语法的主要用例是避免我们在上一课中看到的“过时值”问题。
+
+过时的值并不仅仅是 useEffect 的问题；我们在使用 useMemo 和 useCallback 时也可能遇到这些问题，如本模块后面讨论的，以及在进行异步工作时（例如获取数据），在下一个模块中讨论。
+
+有时，使用回调语法会更方便。例如，如果我们将状态设置函数作为道具传递给子组件，便可以使用回调语法来修改当前值，而不必通过道具传递该值。
+
+<Callout type='info' title='为什么不总是使用回调语法？'>
+
+你可能在想：有没有理由不使用回调语法？为什么不在每种情况下都使用它？
+
+例如：
+
+```jsx
+function Counter() {
+  const [count, setCount] = React.useState(0);
+
+  return (
+    <button
+      onClick={() => {
+        //[!code highlight]
+        setCount((currentCount) => currentCount + 1);
+      }}
+    >
+      {count}
+    </button>
+  );
+}
+```
+
+这是一个典型的“计数器”应用。没有特效，没有异步代码。状态不会变得陈旧。但替代的“回调”语法依然很好用。
+
+即使它有效，我也不建议这样做。至少，现在不要这样。
+
+为了真正熟悉 React，我们需要建立对效果和渲染之间联系的直觉，而回调语法可能有点依赖。如果我们总是使用回调语法，那么建立这种直觉将花费我们更长的时间！
+
+不幸的是，回调语法并不是灵丹妙药。即使你一直在使用它，你仍然会偶尔遇到过时值导致问题的情况。因此，培养这种直觉是很重要的，以便你能够在这些情况出现时妥善处理！
+
+我建议：默认情况下使用非回调形式。当你遇到错误时，可以尝试回调语法看看是否有帮助。如果有，请花几分钟看看你是否能理解原因。你练习得越多，理解得就会越快。
+
+</Callout>

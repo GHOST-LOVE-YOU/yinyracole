@@ -1,0 +1,28 @@
+main p {
+  padding: 32px;
+  padding-bottom: 8px;
+  text-align: center;
+  font-size: 3rem;
+  font-weight: 500;
+  line-height: 1.1;
+}
+.prefix {
+  display: block;
+  font-size: 1rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+button {
+  display: block;
+  margin: 16px auto 48px;
+  padding: 8px 32px;
+}
+footer {
+  text-align: center;
+}
+.decoration {
+  position: absolute;
+  top: 0;
+  right: 0;
+  font-size: 4rem;
+}

@@ -1,0 +1,23 @@
+#root {
+  height: 200px;
+}
+body {
+  background: hsl(345deg 80% 85%);
+}
+#root {
+  display: grid;
+  place-content: center;
+}
+.clock {
+  font-size: 2rem;
+  font-family: monospace;
+  font-variant-numeric: tabular-nums;
+}
+.clock-toggle {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 32px;
+  margin: auto;
+  width: 150px;
+}

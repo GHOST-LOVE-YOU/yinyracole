@@ -1,0 +1,79 @@
+---
+title: useEffect 钩子
+description: useEffect 钩子
+---
+
+import AppJsCode from "./code/App.js.example";
+import CounterJsCode from "./code/Counter.js.example";
+import StylesCssCode from "./code/styles.css.example";
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+在课程的前两个模块中，我们谈到了“核心 React 循环”：我们给 React 一段 JSX，React 生成相应的 DOM。当 JSX 发生变化（例如，因为状态或属性发生变化）时，React 会更新 DOM 以保持一致，始终保持同步。这是 React 的主要职责，主要目的。
+
+但是对于那些超出主要工作范围的事情呢？例如，如果我们想更新文档的标题，以包含一个状态变量呢？
+
+这被称为Effect。Effect的其他例子包括与本地存储交互或进行网络请求。
+
+React 为我们提供了一个特定的工具来管理Effect： useEffect 钩子。我们通过回调函数将一些代码传递给 useEffect ，然后 React 在每次渲染后为我们调用该函数。
+
+为什么不直接在组件中完成工作呢？好吧，我们可以，但 useEffect 给了我们额外的工具。
+
+我们可以指定依赖关系，以便Effect只在某些情况下运行，即在特定值发生变化时。例如：
+
+```jsx
+React.useEffect(() => {
+  // Effect logic
+  document.title = `(${count}) — Counter 2.0`;
+}, [count]);
+```
+
+通过指定 \[count] ，我们是在说Effect逻辑仅在 count 变量变化时运行。
+
+Effect总是在第一次渲染后运行，无论我们在依赖数组中指定了什么。
+
+</Accordion>
+
+</Accordions>
+
+<Callout type='warn' title='关于速度/性能的澄清'>
+
+在上面的视频中，我提到更新标题并不是实时的。我意识到你可能会认为这个延迟是由 useEffect 引起的，因为 useEffect 在渲染后触发。
+
+实际上，useEffect 几乎是瞬时触发的。延迟可以忽略不计，通常小于一毫秒。
+
+那为什么会有延迟呢？当我们更新 document.title 时，浏览器不会立即将更改传播到标签的标题。我不太确定原因，但每当我们更改文档的标题时，总会有一些延迟。
+
+</Callout>
+
+## 玩这个例子
+
+这个例子的棘手之处，以及我在本地代码编辑器中进行操作的原因，是在本课程的互动沙盒中，文档的标题是不可见的。😅
+
+我还是在下面包含了沙盒，并添加了一个 console.log 来显示新值。如果你真的想深入了解这个例子，也欢迎在你的机器上本地运行代码。
+
+<Sandpack
+  files={{
+    "App.js": AppJsCode,
+    "Counter.js": CounterJsCode,
+    "styles.css": { code: StylesCssCode, hidden: true },
+  }}
+  customSetup={{
+    dependencies: {
+      "react-feather": "latest",
+    },
+  }}
+  template="react"
+/>
+
+## 严格模式的陷阱
+
+在我们深入讨论 useEffect 之前，我想提到一个非常常见的绊脚石。
+
+当你在这个课程平台之外使用 React 时，你可能会注意到一些有趣的事情：Effect似乎在组件首次挂载时运行了两次。
+
+这是由于一个称为严格模式的设置。在严格模式下，React 会在我们开发应用程序时自动重新运行某些代码块。这是为了突出潜在问题。
+
+目前，此课程平台上的严格模式已禁用。在接下来的几节课中，我们将学习严格模式的所有内容，从那时起，它将在本课程的所有沙箱中启用。

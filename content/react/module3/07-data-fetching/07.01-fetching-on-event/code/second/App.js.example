@@ -1,0 +1,84 @@
+import React from 'react';
+
+// Remove the “?simulatedError=true” to
+// stop receiving errors:
+const ENDPOINT =
+  'https://jor-test-api.vercel.app/api/contact?simulatedError=true';
+
+function ContactForm() {
+  const [email, setEmail] = React.useState('');
+  const [message, setMessage] = React.useState('');
+  
+  // idle | loading | success | error
+  const [status, setStatus] = React.useState('idle');
+  
+  const id = React.useId();
+  const emailId = `${id}-email`;
+  const messageId = `${id}-message`;
+  
+  async function handleSubmit(event) {
+    event.preventDefault();
+
+    setStatus('loading');
+
+    const response = await fetch(ENDPOINT, {
+      method: 'POST',
+      body: JSON.stringify({
+        email,
+        message,
+      }),
+    });
+    const json = await response.json();
+
+    if (json.ok) {
+      setStatus('success');
+      setMessage('');
+    } else {
+      setStatus('error');
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <div className="row">
+        <label htmlFor={emailId}>Email</label>
+        <input
+          required={true}
+          disabled={status === 'loading'}
+          id={emailId}
+          type="email"
+          value={email}
+          onChange={(event) => {
+            setEmail(event.target.value);
+          }}
+        />
+      </div>
+      <div className="row">
+        <label htmlFor={messageId}>Message</label>
+        <textarea
+          required={true}
+          disabled={status === 'loading'}
+          id={messageId}
+          value={message}
+          onChange={(event) => {
+            setMessage(event.target.value);
+          }}
+        />
+      </div>
+      <div className="button-row">
+        <span className="button-spacer" />
+        <button disabled={status === 'loading'}>
+          {status === 'loading'
+            ? 'Submitting…'
+            : 'Submit'}
+        </button>
+      </div>
+      {status === 'success' && <p>Message sent!</p>}
+      {status === 'error' && (
+        <p>Something went wrong!</p>
+      )}
+    </form>
+  );
+}
+
+export default ContactForm;

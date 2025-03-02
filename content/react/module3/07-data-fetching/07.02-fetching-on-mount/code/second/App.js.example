@@ -1,0 +1,42 @@
+import React from 'react';
+import useSWR from 'swr';
+
+// Remove "?simulatedError=true" to see the success state:
+const ENDPOINT =
+  'https://jor-test-api.vercel.app/api/get-temperature?simulatedError=true';
+
+async function fetcher(endpoint) {
+  const response = await fetch(endpoint);
+  const json = await response.json();
+
+  if (!json.ok) {
+    throw json;
+  }
+
+  return json;
+}
+
+function App() {
+  const { data, isLoading, error } = useSWR(ENDPOINT, fetcher);
+
+  if (isLoading) {
+    return <p>Loading…</p>;
+  }
+
+  if (error) {
+    return <p>Something's gone wrong</p>;
+  }
+
+  return (
+    <p>
+      Current temperature:
+      {typeof data?.temperature === 'number' && (
+        <span className="temperature">
+          {data.temperature}°C
+        </span>
+      )}
+    </p>
+  );
+}
+
+export default App;

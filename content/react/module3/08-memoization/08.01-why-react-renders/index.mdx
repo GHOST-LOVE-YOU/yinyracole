@@ -1,0 +1,168 @@
+---
+title: 为什么 React 重新渲染
+description: 为什么 React 重新渲染
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondBigCountNumberJsCode from "./code/second/BigCountNumber.js.example";
+import secondCounterJsCode from "./code/second/Counter.js.example";
+import secondDecorationJsCode from "./code/second/Decoration.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+所以，在我们谈论 useMemo 和 useCallback 之前，我们需要对 React 渲染周期非常熟悉。
+
+在本课程中，我们已经看到如何调用状态设置函数（例如 setCount ， setUser ）来触发重新渲染。React 需要捕捉在给定状态变量的新值时，UI 应该是什么样子的快照。
+
+事实上，我们已经学到了很多关于重新渲染的知识。在这一课中，我们将进一步完善所学的内容，稍微探讨一下，看看我们是否能使事情变得更清晰。
+
+## 基本规则
+
+所以，让我们从一个基本的真理开始：在 React 中，每次重新渲染都始于状态变化。这是组件在 React 中重新渲染的唯一“触发器”。<abbr title="过去有一个forceUpdate()也能触发重新渲染, 但是后来移除了">\*</abbr>
+
+现在，这可能听起来不太对……毕竟，当组件的属性改变时，它们不会重新渲染吗？
+
+事情是这样的：当一个组件重新渲染时，它也会重新渲染所有的子组件。
+
+让我们看一个例子：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+在这个例子中，我们有 3 个组件： App 在顶部，App 渲染 Counter ，Counter 渲染 BigCountNumber 。
+
+在 React 中，每个状态变量都与特定的组件实例关联。在这个例子中，我们有一个状态 count ，它与 Counter 组件相关联。
+
+每当这个状态改变时， Counter 会重新渲染。而因为 BigCountNumber 是由 Counter 渲染的，所以它也会重新渲染。
+
+这是一个互动图表，展示了这个机制的作用。点击“Increment”按钮以触发状态变化：
+
+<video controls loop muted playsInline width="50%">
+  <source src="/react/module3/render-graph.mp4" type="video/mp4" />
+</video>
+
+好的，让我们清除掉第一个大误解：每当状态变量改变时，整个应用都会重新渲染。
+
+我知道一些开发者认为，React 中每一次状态改变都会导致整个应用重新渲染，但这并不正确。重新渲染只会影响拥有状态的组件及其子孙组件（如果有的话）。在这个例子中， App 组件在 count 状态变量改变时并不需要重新渲染。
+
+不过，与其将这一点记忆为规则，不如退一步看看我们是否能弄清楚这是为什么这样运作的。
+
+React 的“主要工作”是保持应用程序的 UI 与 React 状态同步。重新渲染的目的在于弄清楚需要更改的内容。
+
+让我们考虑上面的“计数器”示例。当 Counter 组件首次挂载时，React 渲染所有相关元素，并得出以下 DOM 应该是什么样的草图：
+
+```html
+<main>
+  <p>
+    <span class="prefix">Count:</span>
+    0
+  </p>
+  <button>Increment</button>
+</main>
+```
+
+当用户点击按钮时， count 状态变量从 0 翻转到 1 。这对用户界面有什么影响？好吧，这正是我们希望通过进行另一次渲染来了解的！
+
+React 重新运行 Counter 和 BigCountNumber 组件的代码，我们生成了我们想要的 DOM 的新图像：
+
+```html
+<main>
+  <p>
+    <span class="prefix">Count:</span>
+    1
+  </p>
+  <button>Increment</button>
+</main>
+```
+
+正如我们所了解到的，每次渲染就像一个快照，一张照片告诉我们基于当前应用程序状态，用户界面应该是什么样子。
+
+React 然后进行了一场“找不同”的游戏，以找出快照之间发生了什么变化。在这种情况下，它看到我们的段落有一个文本节点从 0 变为 1 ，因此它编辑该文本节点以匹配快照。确保工作完成后，React 退回等待下一个状态变化。这就是我们所称的核心 React 循环。
+
+考虑到这个框架，让我们再次查看我们的渲染图：
+
+<video controls loop muted playsInline width="50%">
+  <source src="/react/module3/render-graph.mp4" type="video/mp4" />
+</video>
+
+我们的 count 状态与 Counter 组件相关联。因为数据不能在 React 应用中“向上”流动，我们知道这个状态变化不可能影响 \<App /> 。因此，我们不需要重新渲染那个组件。
+
+但我们确实需要重新渲染 Counter 的子组件 BigCountNumber 。这是实际显示 count 状态的组件。如果我们不渲染它，我们就不知道我们的段落文本节点应该从 0 改变为 1 。我们需要在我们的草图中包含这个组件。
+
+重新渲染的关键在于弄清楚状态变化如何影响用户界面。因此，我们需要重新渲染所有可能受影响的组件，以获得准确的快照。
+
+## 这与props无关
+
+好的，接下来我们来谈谈第二个重大误解：一个组件会因为其 props 发生变化而重新渲染。
+
+让我们用一个更新的例子来探索。
+
+在下面的代码中，我们的“Counter”应用程序添加了一个全新的组件， Decoration ：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "BigCountNumber.js": secondBigCountNumberJsCode,
+    "Counter.js": secondCounterJsCode,
+    "Decoration.js": secondDecorationJsCode,
+    "styles.css": secondStylesCssCode,
+  }}
+  template="react"
+/>
+
+（将所有组件放在一个大的文件中有点拥挤，所以我冒昧地进行了重组。但整体组件结构是一样的，除了新的 Decoration 组件。）
+
+我们Counter现在角落里有一只可爱的小帆船，由 Decoration 组件渲染。它不依赖于 count ，所以当 count 变化时，它可能不会重新渲染，对吧？
+
+嗯，呃，不完全是。
+
+<video controls loop muted playsInline width="80%">
+  <source
+    src="/react/module3/render-with-decoration-graph.mp4"
+    type="video/mp4"
+  />
+</video>
+
+当一个组件重新渲染时，它会尝试重新渲染所有子组件，无论它们是否通过 props 接收特定的状态变量。
+
+现在，这似乎违反直觉……如果我们没有将 count 作为属性传递给 \<Decoration> ，为什么它还需要重新渲染呢？？
+
+这里是答案：React 很难 100%确定 \<Decoration> 是否直接或间接依赖于 count 状态变量。
+
+在理想的世界中，React 组件总是“纯粹”的。纯组件是在给予相同的 props 时总是产生相同 UI 的组件。
+
+在现实世界中，我们的许多组件都是不纯的。创建一个不纯组件出乎意料地简单。例如：
+
+```jsx
+function CurrentTime() {
+  const now = new Date();
+
+  return <p>It is currently {now.toString()}</p>;
+}
+```
+
+该组件在每次渲染时都会显示不同的值，因为它依赖于当前时间！
+
+这个问题的一个更隐蔽的版本与 refs 有关。如果我们将 ref 作为属性传递，React 将无法判断自上次渲染以来我们是否对其进行了修改。因此它选择重新渲染，以确保安全。
+
+React 的首要目标是确保用户看到的界面与应用程序状态保持“同步”。因此，React 会倾向于进行过多的渲染。它不想冒险向用户展示过时的界面。
+
+所以，回到我们之前的误解：props 与重新渲染没有关系。我们的 \<BigCountNumber> 组件并不是因为 count prop 的变化而重新渲染。
+
+当组件重新渲染时，因为它的一个状态变量已被更新，重新渲染将会逐层传递，以便 React 确定新的快照应 look like。
+
+话虽如此，我们可以做一些事情来优化这个过程。我们将在接下来的几节课中了解我们的选择。
+
+<Callout type='info' title='渲染与绘画'>
+
+在讨论这些内容时，重要的是要记住“渲染”和“绘制”并不是同一回事。重新渲染不会触及 DOM，除非需要更新某些内容。
+
+不必要的重新渲染可能会成为性能负担，因为协调过程需要比较大量的 React 元素。在接下来的课程中，我们将学习如何解决这个问题。但我认为同样重要的是要记住，大多数重新渲染是微不足道的。React 的设计旨在快速且高效，我们不需要过于细致地管理它！
+
+</Callout>

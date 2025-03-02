@@ -1,0 +1,289 @@
+---
+title: 在挂载时运行
+description: 在挂载时运行
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+import thirdAppJsCode from "./code/third/App.js.example";
+import thirdStylesCssCode from "./code/third/styles.css.example";
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+在本视频中，我们探讨如何构建一个“自动聚焦”的文本输入，当组件加载时能够自动获得焦点。
+
+假设我们有以下代码：
+
+```jsx
+function App() {
+  const [searchTerm, setSearchTerm] = React.useState("");
+
+  return (
+    <main>
+      <form>
+        //[!code highlight]
+        {/* I want to focus this input on mount: */}
+        //[!code highlight]
+        <input
+          //[!code highlight]
+          value={searchTerm}
+          //[!code highlight]
+          onChange={(event) => {
+            //[!code highlight]
+            setSearchTerm(event.target.value);
+            //[!code highlight]
+          }}
+          //[!code highlight]
+        />
+        <button>Search</button>
+      </form>
+    </main>
+  );
+}
+```
+
+我们可以通过 useRef 钩子捕获对该输入的引用，正如我们之前看到的：
+
+```jsx
+function App() {
+  const [searchTerm, setSearchTerm] = React.useState("");
+
+  //[!code highlight]
+  const inputRef = React.useRef();
+
+  return (
+    <main>
+      <form>
+        <input
+          //[!code highlight]
+          ref={inputRef}
+          value={searchTerm}
+          onChange={(event) => {
+            setSearchTerm(event.target.value);
+          }}
+        />
+        <button>Search</button>
+      </form>
+    </main>
+  );
+}
+```
+
+输入 DOM 节点有一个 .focus() 方法，我们可以调用它来聚焦，但我该如何在挂载时做到这点呢？
+
+我可以尝试在渲染中正确地做到这一点：
+
+```jsx
+function App() {
+  const [searchTerm, setSearchTerm] = React.useState("");
+
+  const inputRef = React.useRef();
+  inputRef.current.focus();
+
+  // ✂️
+}
+```
+
+不幸的是，这导致了一个错误：
+
+<Callout type='error'>
+
+Cannot read properties of undefined (reading 'focus').
+
+无法读取未定义的属性（读取 'focus'）。
+
+</Callout>
+
+问题是当我们第一次创建 inputRef 时，它是空的 ( \{ current: undefined } )。它只在第一次渲染后捕获输入的 DOM 节点。
+
+解决方案是使用 useEffect 钩子：
+
+```jsx
+function App() {
+  const [searchTerm, setSearchTerm] = React.useState("");
+
+  const inputRef = React.useRef();
+
+  //[!code highlight]
+  React.useEffect(() => {
+    //[!code highlight]
+    inputRef.current.focus();
+    //[!code highlight]
+  }, []);
+
+  // ✂️
+}
+```
+
+关键是，我们传递了一个空的依赖数组。这是我们告诉 React，“这个Effect不依赖于任何其他值”。如果它不依赖于任何值，它将永远不会重新运行！
+
+Effect总是在第一次渲染后运行，然后在依赖项更改时再次运行。这种结构确保它只在第一次渲染后运行。
+
+</Accordion>
+
+</Accordions>
+
+这是视频中的沙盒。取消Effect中的注释以吸引你的注意力：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+<Callout type='warn' title='“autofocus” 属性'>
+
+HTML 表单输入具有一个 autofocus 属性，可以在页面加载时自动聚焦该元素：
+
+```jsx
+<input autofocus type="text" />
+```
+
+鉴于有内置的方法可以自动聚焦输入，为什么我们还要为 useRef 和 useEffect 而费这么大劲呢？
+
+不幸的是，在 React 中使用 autofocus 属性并不安全。
+
+autofocus 属性只有在页面首次加载时元素存在的情况下才能可靠地工作。如果元素在之后动态注入到页面中，则无法正常工作。
+
+在 React 中，几乎每个元素都是动态注入的！唯一的例外是如果你使用服务器端渲染，即便如此，也仅限于用户访问你网站的第一个页面。
+
+因此，上述解决方案，通过引用捕获输入并触发 .focus() 在Effect中，是解决 React 中此问题的最佳方式。
+
+</Callout>
+
+## 订阅
+
+假设我们想要跟踪用户的光标位置。每当他们移动鼠标时，我们将更新一些状态。
+
+我们可以将 onMouseMove 事件处理程序添加到特定的 DOM 节点，如下所示：
+
+```jsx
+<div
+  onMouseMove={event => {
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }}
+>
+```
+
+这仅在用户悬停在这个特定的 \<div> 上时有效……如果我们想要跟踪他们的光标位置，无论鼠标在视口内的哪个位置呢？
+
+如果你愿意，可以花几分钟时间进行尝试，看看能否找到解决方案。已经提供了一个沙盒：
+
+<Callout type='info'>
+
+为了监听全局事件，您可以使用 window.addEventListener 。有关更多信息，请查看 JavaScript 入门中的“全局事件”课程 👀 。
+
+</Callout>
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "styles.css": { code: secondStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+我们来讨论一下：
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+要监听全局鼠标移动事件，我们需要使用 window.addEventListener 。我们可以在Effect钩子中注册它，像这样：
+
+```jsx
+React.useEffect(() => {
+  function handleMouseMove(event) {
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  window.addEventListener("mousemove", handleMouseMove);
+});
+```
+
+乍一看，这似乎可行，但这种方法有两个问题。
+
+首先，我们并没有清理我们的事件监听器。现在先把这个放在一边；我们将在下节课中讨论清理。
+
+我想讨论的问题是我们添加了多个事件监听器。
+
+因为我们没有指定依赖数组，这个Effect将在每次渲染后都运行。那意味着每当用户的鼠标位置变化时，我们会再次调用 window.addEventListener 。如果触发了 100 次鼠标移动事件，我们将有 100 个事件监听器。
+
+window.addEventListener 是一个订阅。我们只想在组件首次挂载时订阅一次。
+
+可能解决方案像这样
+
+```jsx
+React.useEffect(() => {
+  function handleMouseMove(event) {
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  window.addEventListener("mousemove", handleMouseMove);
+}, []);
+```
+
+window.addEventListener 不是 React 的一部分，它是 DOM 的一部分。当我们调用这个方法时，我们设置了一个长时间运行的进程，当检测到 mousemove 事件时，它会调用我们的回调函数。
+
+许多其他情况也是如此，比如：
+
+- 进行间隔训练
+- 打开 web socket 连接
+- 使用 ResizeObserver
+
+我有一些插图可以直观地展示这里发生的事情。
+
+在空依赖数组下，Effect只会在第一次渲染后运行一次，启动一个单一的长时间运行的进程：
+
+![effect-subscription-first-render](/react/module3/effect-subscription-first-render.svg)
+
+然而，如果没有空的依赖数组，我们的Effect将在每次渲染后运行，启动多个长时间运行的进程：
+
+![effect-subscription-every-render](/react/module3/effect-subscription-every-render.svg)
+
+</Accordion>
+
+</Accordions>
+
+以下是视频中的图表：
+
+**带有空依赖数组：**
+
+![effect-subscription-first-render](/react/module3/effect-subscription-first-render.svg)
+
+**没有依赖数组：**
+
+![effect-subscription-every-render](/react/module3/effect-subscription-every-render.svg)
+
+这是视频中的最终解决方案：
+
+<Sandpack
+  files={{
+    "App.js": thirdAppJsCode,
+    "styles.css": { code: thirdStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+<Callout type='warn' title='缺少清理！'>
+
+在我上面的解决方案中，我添加了一个事件监听器，但我从未移除该事件监听器。这是一个问题——它可能导致内存泄漏和其他问题。
+
+很快，我们将看到如何清理我们的订阅。请在完成该课程之前，不要在您的实际项目中应用这些模式！
+
+</Callout>

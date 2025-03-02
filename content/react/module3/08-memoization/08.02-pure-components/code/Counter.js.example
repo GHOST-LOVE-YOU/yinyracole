@@ -1,0 +1,22 @@
+import React from 'react';
+
+import Decoration from './Decoration';
+import BigCountNumber from './BigCountNumber';
+
+function Counter() {
+  const [count, setCount] = React.useState(0);
+  
+  return (
+    <main>
+      <BigCountNumber count={count} />
+      <button onClick={() => setCount(count + 1)}>
+        Increment
+      </button>
+      
+      {/* 👇 This fella is new 👇 */}
+      <Decoration />
+    </main>
+  );
+}
+
+export default Counter;

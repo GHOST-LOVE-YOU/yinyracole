@@ -1,0 +1,241 @@
+---
+title: 在挂载时获取
+description: 在挂载时获取
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+在上一课中，我们看到如何在事件发生时（例如表单提交）发起网络请求。但如果我们需要获取数据以填充初始视图呢？
+
+例如，假设我们正在构建一个天气应用程序。我们想向用户显示他们所在地区的当前温度：
+
+我们想在组件挂载时立即显示温度。
+
+这是一个出乎意料的棘手问题。看起来似乎只是一个小差别，即在挂载时获取而不是在事件中获取，但这会引发一系列复杂的问题。
+
+首先，人体工程学比较棘手。为了在挂载时获取，我们通常会使用 useEffect 钩子，但是在 effect 中使用 async/await 有一些注意事项（将在即将到来的课程中讲解）。
+
+此外，如果我们想以一种稳健、适合生产环境的方式解决这个问题，我们需要关注各种各样的顾虑，包括：
+
+- 缓存响应，以便可以被应用程序中的多个组件重用。
+- 重新验证数据，以确保它不会变得过于陈旧。
+
+这就是一个我们可以迷失数天的兔子洞。😬
+
+因此，在社区中使用工具来帮助处理这些事情已成为标准。[React 文档](https://react.dev/learn/synchronizing-with-effects)<abbr title="要在文档中找到这个建议，请展开'在 Effect 中获取数据有哪些好的替代方案?'这一深入探讨部分。">\*</abbr>，例如，建议使用像 React Query 或 SWR 这样的包。事实上，在这个课程平台上，我使用 SWR 来解决所有这些难题！
+
+![swr](/react/module3/swr.png)
+
+让我们看看它是如何工作的。
+
+## SWR 简介
+
+这是一个 MVP<abbr title="Minimum Viable Product，一种仅包含基本要素的版本">？</abbr>实现。随意去试探和挑剔它。我们将在下面讨论它是如何工作的。
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "styles.css": firstStylesCssCode,
+  }}
+  customSetup={{
+    dependencies: {
+      swr: "latest",
+    },
+  }}
+  template="react"
+/>
+
+<Callout type='info' title='那是什么语法？'>
+
+此代码使用可选链操作符 ( ?. )。您可以在我的“[操作符查找](https://www.joshwcomeau.com/operator-lookup?match=optional-chaining)”工具中了解更多信息。
+
+</Callout>
+
+让我们深入研究这段代码：
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+在第二行，我们从库中导入 useSWR 函数：
+
+```jsx
+import useSWR from "swr";
+```
+
+这是一个自定义钩子。在我看来，这非常酷。我们可以基本上“借用”他们的解决方案，并在一行代码中实现它，从而受益于团队花费数百/数千小时开发、测试和迭代的成果。
+
+我们像这样使用它：
+
+```jsx
+const { data, error } = useSWR(ENDPOINT, fetcher);
+```
+
+useSWR 钩子需要两样东西：
+
+1. 一个独特的key，通常是您想要发出请求的端点
+2. 一个提取器(fetcher)函数
+
+人们认为像 SWR 这样的库实际上为我们网络请求，但这是一个误解。无论我们是否使用这样的库，最终还是我们自己手动编写 Fetch 调用。该库在数据获取方面是中立的。SWR 决定何时运行请求，以及如何处理结果。
+
+这是获取器函数：
+
+```jsx
+async function fetcher(endpoint) {
+  const response = await fetch(endpoint);
+  const json = await response.json();
+
+  return json;
+}
+```
+
+我们从我们的 fetcher 函数返回的任何内容都将被设置为 useSWR 内部的 data 变量。在这种情况下， json 等于：
+
+```json
+{
+  "ok": true,
+  "temperature": -19
+}
+```
+
+（"temperature" 是一个随机值。）
+
+在我们的 App 组件中，我们从 useSWR 中提取 data 和 error ，并在渲染中使用这些变量。如果 data 存在，这意味着请求已经解决，我们可以在我们的用户界面中使用它，来显示温度。
+
+当 useSWR 调用我们的获取函数时，它将键作为第一个参数提供。在这个例子中，这可能看起来很傻，因为我们可以直接使用 ENDPOINT 常量，但这个想法是获取函数应该是通用的。我可以在“helpers.js”文件中定义一个单一的 fetcher 函数，并在应用程序中的每个挂载网络请求中使用它。
+
+现在，这可能看起来很麻烦。如果我们仍然是发起网络请求的人，这个工具有什么好处呢？
+
+一个好处是“重新验证”。这正如名称所示；SWR 代表 Stale While Revalidate。
+
+网络请求将在挂载时立即发出，以获取原始值，但它将在某些战略时刻重复进行，以确保值不会变得过于陈旧。
+
+例如，假设我们切换选项卡，并在另一个选项卡上花费了一些时间。当用户返回时， useSWR 将自动重复网络请求，以获取最新的值，从而使用能够看到最新的温度。
+
+这被称为重新验证。如果值已更改，它将立即替换旧值。
+
+然而，在该请求待处理期间，我们继续显示旧值。在重新验证时显示过期值。
+
+这种行为是可定制的，因此我们可以根据我们的确切需求进行调整。还有其他好处（例如，缓存）。
+
+</Accordion>
+
+</Accordions>
+
+## 加载和错误状态
+
+我们上面的 MVP 不包括加载或错误状态。让我们看看如何使用 SWR 实现它们。
+
+### 加载中(Loading)
+
+除了提供一个 data 值， useSWR 钩子还告诉我们请求是否正在加载。我们可以提取 isLoading 键：
+
+```jsx
+const { data, isLoading } = useSWR(ENDPOINT, fetcher);
+```
+
+isLoading 是一个布尔值。初始值为 true ，在获取请求完成后会切换为 false 。
+
+我们可以使用该值有条件地渲染一个加载 UI，如下所示：
+
+```jsx
+function App() {
+  const { data, isLoading } = useSWR(ENDPOINT, fetcher);
+
+  //[!code highlight]
+  if (isLoading) {
+    //[!code highlight]
+    return (
+      //[!code highlight]
+      <p>Loading…</p>
+      //[!code highlight]
+    );
+    //[!code highlight]
+  }
+
+  return (
+    <p>
+      Current temperature:
+      {typeof data.temperature === "number" && (
+        <span className="temperature">{data.temperature}°C</span>
+      )}
+    </p>
+  );
+}
+```
+
+### 错误(Error)
+
+为了模拟一个错误，我们可以向 ENDPOINT 添加一个查询参数：
+
+```jsx
+const ENDPOINT =
+  "https://jor-test-api.vercel.app/api/get-temperature?simulatedError=true";
+```
+
+这将导致服务器返回 500 状态码👀，而不是 200。它还将返回以下 JSON：
+
+```json
+{
+  "error": "This request returns an error, because the “simulatedError” query parameter was specified."
+}
+```
+
+然而，对于 SWR 来说，这两者都不足以将其标记为错误。
+
+记住：我们管理网络请求！我们的 fetcher 函数负责检索数据，并将其传递给 SWR。如果我们希望这被视为错误，我们需要抛出它：
+
+```jsx
+async function fetcher(endpoint) {
+  const response = await fetch(endpoint);
+  const json = await response.json();
+
+  if (!json.ok) {
+    throw json;
+  }
+
+  return json;
+}
+```
+
+完成此更改后， data 将未定义， error 将是我们从服务器返回的对象。
+
+<Callout type='info' title='扔出一个object？！'>
+
+在 JavaScript 中，通常会抛出一个 Error ，如下所示：
+
+```jsx
+if (!json.ok) {
+  throw new Error("Some sort of error message");
+}
+```
+
+然而，在使用 SWR 时，我更喜欢抛出 JSON 对象。
+
+```jsx
+if (!json.ok) {
+  throw json;
+}
+```
+
+这同样有效，这意味着 error 将是一个对象，而不是一个 Error 实例。这更容易处理，因为我可以访问与错误相关的数据。
+
+</Callout>
+
+这是最终实现，包括加载和错误状态：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "styles.css": secondStylesCssCode,
+  }}
+  customSetup={{
+    dependencies: {
+      swr: "latest",
+    },
+  }}
+  template="react"
+/>

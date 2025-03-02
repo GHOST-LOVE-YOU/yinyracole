@@ -1,0 +1,13 @@
+import React from 'react';
+import { createRoot } from 'react-dom/client';
+
+const element = (
+  <video
+    src="https://sandpack-bundler.vercel.app/videos/cat-skateboarding.mp4"
+    autoplay={true}
+  />
+);
+
+const container = document.querySelector('#root');
+const root = createRoot(container);
+root.render(element);

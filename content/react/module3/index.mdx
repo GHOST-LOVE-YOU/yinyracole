@@ -1,0 +1,134 @@
+---
+title: 工具箱里的另一个工具
+description: 在现代 React 中，组件只是方程的一半。我们还需要学习如何使用 hooks！Hooks 让我们“钩入” React 内部，以便处理副作用、捕获元素引用和优化性能。
+---
+
+<Accordions>
+
+<Accordion title="视频摘要">
+
+当我在 2015 年开始使用 React 时，组件看起来非常不同：
+
+```jsx
+const Button = React.createClass({
+  state: {
+    hi: 5,
+  },
+
+  handleClick(event) {
+    console.log("Clicked!");
+    this.setState({ hi: this.state.hi + 1 });
+  },
+
+  render() {
+    return <button onClick={this.handleClick}>{this.props.children}</button>;
+  },
+});
+```
+
+几年前，我们获得了“类组件”，看起来像这样：
+
+```jsx
+class Button extends React.Component {
+  state = {
+    hi: 5,
+  };
+
+  handleClick = () => {
+    console.log("Clicked!");
+    this.setState({ hi: this.state.hi + 1 });
+  };
+
+  render() {
+    return <button onClick={this.handleClick}>{this.props.children}</button>;
+  }
+}
+```
+
+在这两个时代，组件是工具箱中唯一的工具。React 中的每一个问题都是通过组件来解决的。
+
+现在，组件很棒。能够将一些标记、样式和逻辑打包成一个可重用的单元真是太好了。但并不是每个问题都应该以这种方式解决。
+
+例如，动画。当时一个流行的库，react-motion，使用了一种被称为渲染属性的模式。它看起来像这样：
+
+```jsx
+import { Motion, spring } from "react-motion";
+
+class App extends React.Component {
+  render() {
+    return (
+      <Motion defaultStyle={{ opacity: 0 }} style={{ opacity: spring(1) }}>
+        {({ opacity }) => <div style={{ opacity }}>This div fades in!</div>}
+      </Motion>
+    );
+  }
+}
+```
+
+这到底是怎么回事？为什么这个 Motion 组件将一个函数作为子元素？
+
+所以，这是一种将组件用作数据处理器的方法。它不是直接生成一些用户界面，而是生成一个值。我们给它一些关于我们在不同时间点想要的不透明度的数据，它会计算当前值。
+
+（如果你以前没有见过这个模式，那它可能没有任何意义……不过没关系，这个模式在今天大多数情况下都无关紧要。）
+
+而且这不仅仅是动画。由于组件是工具箱中唯一的工具，我们需要使用组件来处理各种事情，包括：
+
+- 从上下文中提取数据（在模块 4 中讨论）
+- 网络请求
+- 像在加载时滚动到页面顶部的行为
+- 懒加载其他组件
+
+所有这些非用户界面的用例导致了一种被称为“包装地狱”的常见情况：
+
+![wrapper-hell](/react/module3/wrapper-hell.png)
+
+为了解决这些问题，React 团队为工具箱开发了第二个工具：hooks。
+
+我们已经看到 useState 钩子让我们“挂钩”到 React 状态中：
+
+```jsx
+function Button({ children }) {
+  const [hi, setHi] = React.useState(5);
+
+  function handleClick(event) {
+    console.log("Clicked!");
+    setHi(hi + 1);
+  }
+
+  return <button onClick={handleClick}>{children}</button>;
+}
+```
+
+在本模块中，我们将学习几个其他方便的钩子，它们解决不同的离散问题。
+
+然而，钩子真正酷的地方在于，它们允许我们打包并重用业务逻辑。就像 Button 组件可以在我们的应用程序中随处使用一样，我们可以创建自定义的业务逻辑包，例如 useMousePosition 或 useSpringAnimation ，可以在组件之间共享。
+
+Hooks 是 React 的一个不可思议的补充。尽管我曾是渲染属性和旧方式的坚定支持者，但我不得不承认，使用 Hooks 的方式更好。
+
+所有事物都有权衡，有些事情现在比以前更复杂，但总体而言，hooks 是现代 React 令人兴奋和有趣的原因。
+
+</Accordion>
+
+</Accordions>
+
+更正：此视频的最后片段错误地在函数组件中使用了 this 。对造成的任何混淆表示歉意！代码应该是：
+
+```jsx
+function Button({ children }) {
+  const [hi, setHi] = React.useState(5);
+
+  function handleClick(event) {
+    console.log("Clicked!");
+    setHi(hi + 1);
+  }
+
+  return (
+    // [!code highlight]
+    <button onClick={handleClick}>
+      // [!code highlight]
+      {children}
+      // [!code highlight]
+    </button>
+  );
+}
+```

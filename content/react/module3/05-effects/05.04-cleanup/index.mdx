@@ -1,0 +1,463 @@
+---
+title: 清理
+description: 清理
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstMouseTrackerJsCode from "./code/first/MouseTracker.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondMouseTrackerJsCode from "./code/second/MouseTracker.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+我们一直在学习如何在挂载时使用 useEffect 钩子启动长时间运行的进程，但到目前为止我们的解决方案还不完整！
+
+为了展示这个问题，我们更新了“在挂载时运行”课程中的鼠标追踪示例，使其可以有条件地渲染：
+
+```jsx
+function App() {
+  const [isTrackingMouse, setIsTrackingMouse] = React.useState(true);
+
+  function toggleMouseTracking() {
+    setIsTrackingMouse(!isTrackingMouse);
+  }
+
+  return (
+    <div className="wrapper">
+      <button onClick={toggleMouseTracking}>Toggle Mouse Tracking</button>
+      //[!code highlight]
+      {isTrackingMouse && <MouseTracker />}
+    </div>
+  );
+}
+```
+
+当 isTrackingMouse 是一个真值时，我们挂载组件。正如我们在“组件实例”课程中所学，这会创建一个组件实例，一个用于存储与组件相关数据的地方。
+
+当 isTrackingMouse 为假时，我们卸载组件，销毁实例并移除所有相关的 DOM 节点。
+
+因此，人们直觉上会认为，如果组件卸载，任何残留的Effect也会被中断，但不幸的是，事实并非如此。
+
+我们的 MouseTracker 组件设置了以下Effect：
+
+```jsx
+React.useEffect(() => {
+  function handleMouseMove(event) {
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  window.addEventListener("mousemove", handleMouseMove);
+}, []);
+```
+
+当组件卸载时，事件监听器仍然存在，跟踪光标位置并在一个不应该再存在的组件实例上调用 setMousePosition ！
+
+这有两个原因：
+
+1. 每次组件重新挂载时，另一个事件监听器将被添加，而之前的监听器不会被移除。
+2. 因为我们正在引用组件实例的一部分（通过调用 setMousePosition ），JavaScript 垃圾收集器无法清理这个实例！这意味着每次我们挂载这个组件时，都会创建一个将永远不会被删除的实例。
+
+这被称为内存泄漏。用户使用我们应用程序的时间越长，消耗的内存就越多。如果用户刷新页面，内存将被释放，但人们往往会让同一标签页运行数周或数月不等！
+
+为什么事件监听器没有自动移除？事情是这样的：React 实际上不知道我们的 effect 函数内部发生了什么：
+
+```jsx
+// What React sees:
+React.useEffect(() => {
+  ????
+}, []);
+```
+
+React 发现我们给了它一个函数，并且我们指定了何时调用它（通过依赖数组），但 React 无法“看穿”这个函数！它不知道我们已经启动了一个事件监听器，因为事件监听的内容是 DOM 的一部分。
+
+同样，运行我们事件监听器的 JavaScript 引擎并不知道它是在一个组件实例内创建的，也不知道它应该依赖于该实例的存在。
+
+本质上，我们这里有两个独立的系统，协调它们的工作由我们来决定。
+
+幸运的是， useEffect 附带了一种工具来实现这一点：清理函数。
+
+这看起来是这样的：
+
+```jsx
+React.useEffect(() => {
+  function handleMouseMove(event) {
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  window.addEventListener("mousemove", handleMouseMove);
+
+  return () => {
+    window.removeEventListener("mousemove", handleMouseMove);
+  };
+}, []);
+```
+
+在我们的Effect函数中，我们返回一个包含要完成的清理工作的函数。React 会保留这个函数，并在适当的时机调用它：在组件卸载之前。
+
+这通常是任何订阅/长时间运行过程的模式。我们在Effect函数中订阅，并在清理函数中取消订阅。React 会在组件卸载之前调用清理函数，停止该过程并确保我们不会出现内存泄漏。
+
+</Accordion>
+
+</Accordions>
+
+在最后一个模块中，我们讨论了组件实例，以及如何有条件地渲染组件会创建和销毁这些实例。如果你对这个概念仍然感到模糊，可以回顾模块 2 中的“组件实例”课程。
+
+这是视频中的沙盒，添加了清理功能：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "MouseTracker.js": firstMouseTrackerJsCode,
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+<Callout type='info' title='返回函数的函数 😬'>
+
+在我职业生涯早期，让我感到最困惑的事情之一就是函数返回函数。这种事情让我感到头痛：
+
+```jsx
+function doSomething() {
+  const hi = 5;
+
+  return function () {
+    return hi * 2;
+  };
+}
+```
+
+这里发生的事情与 useEffect 清理 API 类似。我们的主要Effect函数返回一个函数：
+
+```jsx
+React.useEffect(() => {
+  // Effect logic here
+
+  // Cleanup function:
+  return () => {
+    // Cleanup logic here
+  };
+});
+```
+
+好消息是：这实际上更多的是一个实现细节。我们不需要在这个奇怪的语法上过于纠结。
+
+最重要的是你要理解基本的概念：我们给 React 两个函数，一个是Effect函数，一个是清理函数，React 在适当的时机为我们调用这些函数。
+
+话虽如此，设置成这样确实有其合理之处。如果你感兴趣，可以展开这个旁注深入了解：
+
+<Accordions>
+
+<Accordion title='展开查看更多' >
+
+假设我们有一根魔法棒 🪄，可以随心所欲地改变 React API。
+
+唯一的硬性要求是开发者需要能够提供两个不同的功能：
+
+- 主要Effect函数
+- 清理函数
+
+满足这些要求有很多方法。例如，我们可以将其结构设计为这样：
+
+```jsx
+React.useEffect(
+  {
+    effect: () => {
+      // Effect logic
+    },
+
+    cleanup: () => {
+      // Cleanup logic
+    },
+  },
+  [],
+);
+```
+
+在这个假设的替代方案中， useEffect 接受一个具有两个独立方法的对象：一个用于Effect，一个用于清理。
+
+我不知道你怎么想，但对我来说，这似乎更容易理解。然而，不幸的是，它并不奏效。😬
+
+看看你是否能发现问题，一旦我们用鼠标追踪解决方案填充它：
+
+```jsx
+React.useEffect(
+  {
+    effect: () => {
+      function handleMouseMove(event) {
+        setMousePosition({
+          x: event.clientX,
+          y: event.clientY,
+        });
+      }
+
+      window.addEventListener("mousemove", handleMouseMove);
+    },
+
+    cleanup: () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    },
+  },
+  [],
+);
+```
+
+如果 React 实际上是以这种方式构建的，并且我们按原样运行这段代码，我们会得到一个错误：
+
+<Callout type='error'>
+
+Uncaught ReferenceError: handleMouseMove is not defined.
+未捕获的引用错误：handleMouseMove 未定义。
+
+</Callout>
+
+我们正在定义一个 handleMouseMove 函数，但它的作用域仅限于 effect 函数。我们的清理函数无法访问它！
+
+这里有一个更简单的例子，显示了同样的问题：
+
+```jsx
+const someObject = {
+  effect: () => {
+    const hi = 5;
+  },
+  cleanup: () => {
+    console.log(hi); // Uncaught ReferenceError: hi is not defined
+  },
+};
+```
+
+我们的清理函数需要访问在Effect函数中创建的内容是非常常见的。
+
+再看看官方实现，我们看到它允许清理函数访问在Effect中创建的所有变量/函数：
+
+```jsx
+React.useEffect(() => {
+  function handleMouseMove(event) {
+    setMousePosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+  }
+
+  window.addEventListener("mousemove", handleMouseMove);
+
+  return () => {
+    // We have access to `handleMouseMove` because it's
+    // defined in the parent scope!
+    window.removeEventListener("mousemove", handleMouseMove);
+  };
+}, []);
+```
+
+这就是 React 团队选择这种方法的原因——他们并不是在炫耀他们的函数式编程技能！
+
+如上所述，这是一项实现细节，并不是我们需要过于担心的事情。
+
+</Accordion>
+
+</Accordions>
+
+</Callout>
+
+## 清理与依赖项
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+在上面的例子中，我们看到如何启动和停止与组件生命周期相关的长时间运行的Effect。但如果我们的Effect有依赖项呢？它们如何与这个清理函数交互？
+
+让我们来看一个更新的例子。与其让一个父组件挂载/卸载 MouseTracker 组件，不如一切都在组件内部发生？
+
+这是新代码：
+
+```jsx
+import React from "react";
+
+function MouseTracker() {
+  const [mousePosition, setMousePosition] = React.useState({
+    x: 0,
+    y: 0,
+  });
+  const [isEnabled, setIsEnabled] = React.useState(true);
+
+  React.useEffect(() => {
+    function handleMouseMove(event) {
+      setMousePosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
+  function toggleMouseTracking() {
+    setIsEnabled(!isEnabled);
+  }
+
+  return (
+    <>
+      <button onClick={toggleMouseTracking}>Toggle Mouse Tracking</button>
+      <p>
+        {mousePosition.x} / {mousePosition.y}
+      </p>
+    </>
+  );
+}
+
+export default MouseTracker;
+```
+
+本质上，我想在 isEnabled 为 true 时注册事件监听器，并在用户点击按钮时注销它，将 isEnabled 翻转为 false 。
+
+当我刚开始接触特效时，我的直觉是做一些像这样的事情：
+
+```jsx
+if (isEnabled) {
+  React.useEffect(() => {
+    function handleMouseMove(event) {
+      setMousePosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+}
+```
+
+对我来说，有条件地调用 useEffect 钩子是非常有道理的。不幸的是，正如我们所了解到的，这违反了“钩子规则”。我们不允许有条件地调用任何钩子。
+
+好吧，嗯。如果我们像这样将 if 条件移到钩子内呢？
+
+```jsx
+React.useEffect(() => {
+  if (isEnabled) {
+    function handleMouseMove(event) {
+      setMousePosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }
+}, []);
+```
+
+如果我们运行这段代码，我们会收到一个不同的 lint 警告：我们缺少一个依赖项！就像我们在 Effect Lint Rules 课上看到的那样，我们需要将所有状态变量添加到依赖数组中。
+
+当我们将 isEnabled 添加到依赖数组中时，我们解决了所有的 lint 警告……而且我们也解决了问题！
+
+```jsx
+// ✅ This code does exactly what we want!
+React.useEffect(() => {
+  if (isEnabled) {
+    function handleMouseMove(event) {
+      setMousePosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+    }
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }
+}, [isEnabled]);
+```
+
+这到底是怎么工作的呢？
+
+（这一部分很难总结，我建议观看/重温视频！）
+
+- 当组件挂载时，我们运行Effect，注册事件监听器，并将清理函数交给 React，就像等待打开的礼物
+- 当用户移动鼠标时， mousePosition 状态将快速更新，但Effect不会重新运行，因为 mousePosition 不是一个依赖项。
+- 如果用户点击按钮， isEnabled 将变为 false。由于 isEnabled 是一个依赖项，这意味着Effect将重新运行。
+- 不过，首先，React 会调用清理函数！
+- 事件监听器被移除，因为 isEnabled 是 false ，所以Effect是无操作。
+- 每次用户点击按钮时，这个过程都会重复。
+
+这里的关键技巧是Effect并不意味着“叠加”。在 React 重新运行Effect之前，它会调用缓存的清理函数，以确保我们从“干净的状态”开始。
+
+视频以几个图表结束，说明了这个概念。它们可以在下面查看：
+
+</Accordion>
+
+</Accordions>
+
+以下是视频中的图表：
+
+运算顺序：
+
+![effect-table](/react/module3/effect-table.svg)
+
+快照和清理的视图：
+
+![effect-cleanup-timeline](/react/module3/effect-cleanup-timeline.svg)
+
+清理函数并不总是提供：
+
+![effect-cleanup-timeline-missing-cleanups](/react/module3/effect-cleanup-timeline-missing-cleanups.svg)
+
+最后，这是视频中的沙盒。我调整了按钮的文本，使其更清晰一些：
+
+<Sandpack
+  files={{
+    "App.js": { code: secondAppJsCode, hidden: true },
+    "MouseTracker.js": secondMouseTrackerJsCode,
+    "styles.css": { code: secondStylesCssCode, hidden: true },
+  }}
+  template="react"
+/>
+
+<Callout type='info' title='React 19 中的 refs 和清理函数'>
+
+从 React 19 开始，我们之前看到的 ref 属性也可以提供一个清理函数：
+
+```jsx
+<input
+  ref={(element) => {
+    // This callback will be called on every render
+
+    return () => {
+      // This cleanup function will be called right before
+      // every re-render, and when the element is destroyed.
+    };
+  }}
+/>
+```
+
+就我个人而言，我还没有找到这个的用途。与 useEffect 不同，ref 回调不能给定依赖数组，这意味着 ref 回调 + 清理每次都会触发。
+
+话虽如此，这是一项非常新的变化，也许我还没有找到合适的使用案例。请随意尝试！
+
+您可以在 [React 19 补丁说明](https://react.dev/blog/2024/12/05/react-19#cleanup-functions-for-refs)中了解更多信息。
+
+</Callout>

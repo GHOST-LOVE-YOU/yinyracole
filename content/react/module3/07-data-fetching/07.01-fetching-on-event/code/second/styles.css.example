@@ -1,0 +1,71 @@
+body {
+  background-color: hsl(25deg 90% 90%);
+}
+
+#root {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.row label {
+  width: 6.5rem;
+  text-align: right;
+}
+.row input,
+.row textarea {
+  flex: 1;
+  padding: 8px;
+}
+.row textarea {
+  height: 6.5rem;
+}
+.button-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 32px;
+}
+.button-spacer {
+  width: 6.5rem;
+}
+button {
+  display: block;
+  padding: 16px 64px;
+  margin: 0px auto;
+}
+input,
+textarea,
+button {
+  min-width: 200px;
+  outline-offset: 4px;
+}
+p {
+  text-align: center;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 350px) {
+  .row {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .row label {
+    width: 100%;
+    text-align: left;
+  }
+  .button-spacer {
+    display: none;
+  }
+  input,
+  textarea,
+  button {
+    width: 100%;
+  }
+}

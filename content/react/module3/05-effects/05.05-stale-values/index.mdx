@@ -1,0 +1,563 @@
+---
+title: 过时的值
+description: 过时的值
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import firstMediaPlayerJsCode from "./code/first/MediaPlayer.js.example";
+import firstVisuallyHiddenJsCode from "./code/first/VisuallyHidden.js.example";
+import firstStylesCssCode from "./code/first/styles.css.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondMediaPlayerJsCode from "./code/second/MediaPlayer.js.example";
+import secondVisuallyHiddenJsCode from "./code/second/VisuallyHidden.js.example";
+import secondStylesCssCode from "./code/second/styles.css.example";
+
+当我在 90 年代末首次开始使用计算机时，我使用了两个不同的媒体播放器。
+
+对于直播，我使用了 RealPlayer：
+
+![real-player](/react/module3/real-player.png)
+
+RealPlayer 还不错，但并没有什么个性。对我那个青春期的自己来说，还有一个更酷的选择：Winamp。
+
+![winamp](/react/module3/winamp.png)
+
+在那些早期的日子和现在之间，出现了无数媒体播放器，但它们都有一个共同点。我使用过的每一个媒体播放器都实现了完全相同的键盘快捷键：
+
+空格键将播放（或暂停）当前选定的歌曲。
+
+在本模块的早些时候，我们构建了一个简单的媒体播放器，我认为我们应该更新它以包含空格键快捷方式！
+
+如果你愿意，我鼓励你花几分钟尝试这个问题，但我现在要警告你：这 surprisingly tricky。
+
+<Callout type='warn' title='焦点和 iframe'>
+
+本课程平台中的操场使用 iframes 来显示“结果”面板。这对事件监听器等内容带来了一些挑战！
+
+要测试您的解决方案，您需要在 iframe 内单击，以便空格键事件在正确的上下文中触发。您可以在 iframe 内的任何地方单击。
+
+</Callout>
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+    "MediaPlayer.js": firstMediaPlayerJsCode,
+    "VisuallyHidden.js": firstVisuallyHiddenJsCode,
+    "styles.css": { code: firstStylesCssCode, hidden: true },
+  }}
+  customSetup={{
+    dependencies: {
+      "react-feather": "latest",
+    },
+  }}
+  template="react"
+/>
+
+让我们谈谈这个。
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+首先，我实现了我们最近看到的标准结构：
+
+```jsx
+React.useEffect(() => {
+  function handleKeyDown(event) {
+    if (event.code === "Space") {
+      // TODO: Play or pause
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, []);
+```
+
+我们开始我们的订阅，监听 keydown 事件，并检查他们是否按下了空格键。我们的清理函数会从此事件中退订。因为我们指定了一个空的依赖数组，这个事件监听器在整个组件生命周期内都会运行。
+
+我们如何播放或暂停歌曲？好吧，我们有这段之前的代码：
+
+```jsx
+<button
+  onClick={() => {
+    if (isPlaying) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play();
+    }
+
+    setIsPlaying(!isPlaying);
+  }}
+>
+```
+
+使这个有点棘手的事情是我们实际上需要管理两个状态：
+
+- React 状态，在 isPlaying 变量下。
+- 内部 DOM 音频状态，控制歌曲是否实际播放。
+
+一个选项是创建一个管理两者的函数：
+
+```jsx
+function togglePlaying() {
+  if (isPlaying) {
+    audioRef.current.pause();
+  } else {
+    audioRef.current.play();
+  }
+
+  setIsPlaying(!isPlaying);
+}
+```
+
+然后我们会在用户点击按钮时调用这个函数，以及在我们的 handleKeydown 方法中调用它。
+
+然而，这种方法存在两个问题：
+
+- 我们必须将这个 togglePlaying 函数添加到我们Effect的依赖数组中，这可能会引入性能问题。当我们讨论 useMemo 和 useCallback 时，会进一步讲到这一点。
+- 使用这个功能太容易被忘记了！
+
+为了进一步阐述第二点，我可以很容易地想象另一个开发者或我自己没有意识到实际上有两个相关的状态。
+
+如果我们不够小心，我们可能会陷入状态变量分歧的情境。也许 isPlaying 被设置为 true，但音频并没有播放！这些问题很难调试，我希望将其可能性降到最低。
+
+所以，这是我的解决方案：我们将添加一个第二个 useEffect 钩子。这个钩子的工作是：确保音频 DOM 节点的内部状态与 isPlaying 状态变量保持同步：
+
+```jsx
+React.useEffect(() => {
+  if (isPlaying) {
+    audioRef.current.play();
+  } else {
+    audioRef.current.pause();
+  }
+}, [isPlaying]);
+```
+
+我们可以更新我们的按钮，仅切换状态变量：
+
+```jsx
+<button
+  onClick={() => {
+    // This work is no longer necessary:
+    //
+    //   if (isPlaying) {
+    //     audioRef.current.pause();
+    //   } else {
+    //     audioRef.current.play();
+    //   }
+
+    setIsPlaying(!isPlaying);
+  }}
+>
+```
+
+我们也可以在我们的 keydown 回调中更新 isPlaying 状态：
+
+```jsx
+React.useEffect(() => {
+  function handleKeyDown(event) {
+    //[!code highlight]
+    if (event.code === "Space") {
+      //[!code highlight]
+      setIsPlaying(!isPlaying);
+      //[!code highlight]
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+}, []);
+```
+
+现在，当我们这样做时，我们会收到一个 lint 警告：
+
+<Callout type='error'>
+
+React Hook React.useEffect has a missing dependency: 'isPlaying'.
+
+React Hook React.useEffect 缺少依赖项：'isPlaying'。
+
+</Callout>
+
+我们代码的问题是我们的Effect仅在第一次渲染后运行。这意味着我们只能访问第一个快照，其中 isPlaying 被永久设置为 false 。
+
+每次用户按下空格键时，我们调用 setIsPlaying(!false) 。这意味着键盘快捷键可以开始歌曲，但无法停止它。
+
+（在视频中，有一些图表帮助说明这一点；我将把它们放在这个摘要下面。）
+
+这个问题有两个潜在的解决方案。
+
+- 添加依赖项
+- 使用回调逃生通道(the callback escape hatch)
+
+第一个选项，添加依赖关系，是我们在“Effect检查规则”课程中看到的。我们将 isPlaying 状态添加到依赖数组中：
+
+```jsx
+React.useEffect(() => {
+  function handleKeyDown(event) {
+    if (event.code === "Space") {
+      setIsPlaying(!isPlaying);
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+  //[!code highlight]
+}, [isPlaying]);
+```
+
+在这个解决方案中，我们调用我们的清理函数，并在每次 isPlaying 变化时重新运行Effect。这意味着我们不断“刷新”我们的 keydown 回调，以便它始终可以访问最新的快照。
+
+在这种特定情况下，这完全不是问题；添加/删除事件监听器非常快速。
+
+但是如果订阅/退订过程很慢怎么办？有没有什么方法可以在不将其添加到依赖数组的情况下访问 isPlaying 的最新值？
+
+有：使用回调逃生通道
+
+这看起来是这样的：
+
+```jsx
+React.useEffect(() => {
+  function handleKeyDown(event) {
+    //[!code highlight]
+    if (event.code === "Space") {
+      //[!code highlight]
+      setIsPlaying((currentIsPlaying) => {
+        //[!code highlight]
+        return !currentIsPlaying;
+        //[!code highlight]
+      });
+    }
+  }
+
+  window.addEventListener("keydown", handleKeyDown);
+
+  return () => {
+    window.removeEventListener("keydown", handleKeyDown);
+  };
+  //[!code highlight]
+}, []);
+```
+
+当我们将一个函数传递给我们的状态设置函数时，React 会为我们调用这个函数，我们返回的任何内容都将成为新的状态。
+
+例如，这两个语句具有完全相同的Effect：
+
+```jsx
+setIsPlaying(5);
+setIsPlaying(() => {
+  return 5;
+});
+```
+
+当 React 为我们调用这个函数时，它将当前状态的值作为参数提供。这是最新的值，直接从组件实例中提取。
+
+通过这个变通方法，我们能够在整个组件生命周期内保持一个单一的事件处理程序运行。
+
+哪种方法最好？在大多数情况下，它们的Effect都一样好。这个方法在理论上有性能优势，但在大多数情况下是微不足道的。
+
+掌握这两种方法是很重要的。一旦你理解了它们，你可以选择你最喜欢的那一种。
+
+我建议在回调函数中将参数命名为 currentX 。因此，如果状态变量是 count ，我会将参数命名为 currentCount 。我偶尔也会使用 currentValue 。我们的目标是明确表示我们不是在引用快照中可能过时的变量。
+
+</Accordion>
+
+</Accordions>
+
+这是视频中的图表：
+
+**缺失依赖项：**
+
+![effect-stale-bugged](/react/module3/effect-stale-bugged.svg)
+
+**将 isPlaying 添加为依赖项：**
+
+![effect-stale-with-dependency](/react/module3/effect-stale-with-dependency.svg)
+
+使用回调函数解决：
+
+![effect-stale-with-callback](/react/module3/effect-stale-with-callback.svg)
+
+<Callout type='info' title='解决方案代码'>
+
+<Accordions>
+
+<Accordion title='展开查看更多' >
+
+我们在这个视频中看到了两个潜在的解决方案。
+
+**解决方案 1：添加依赖项**
+
+```jsx
+import React from "react";
+import { Play, Pause } from "react-feather";
+
+import VisuallyHidden from "./VisuallyHidden";
+
+function MediaPlayer({ src }) {
+  const [isPlaying, setIsPlaying] = React.useState(false);
+
+  const audioRef = React.useRef();
+
+  //[!code highlight]
+  React.useEffect(() => {
+    //[!code highlight]
+    function handleKeyDown(event) {
+      //[!code highlight]
+      if (event.code === "Space") {
+        //[!code highlight]
+        setIsPlaying(!isPlaying);
+        //[!code highlight]
+      }
+      //[!code highlight]
+    }
+    //[!code highlight]
+
+    //[!code highlight]
+    window.addEventListener("keydown", handleKeyDown);
+    //[!code highlight]
+
+    //[!code highlight]
+    return () => {
+      //[!code highlight]
+      window.removeEventListener("keydown", handleKeyDown);
+      //[!code highlight]
+    };
+    //[!code highlight]
+  }, [isPlaying]);
+
+  //[!code highlight]
+  React.useEffect(() => {
+    //[!code highlight]
+    if (isPlaying) {
+      //[!code highlight]
+      audioRef.current.play();
+      //[!code highlight]
+    } else {
+      //[!code highlight]
+      audioRef.current.pause();
+      //[!code highlight]
+    }
+    //[!code highlight]
+  }, [isPlaying]);
+
+  return (
+    <div className="wrapper">
+      <div className="media-player">
+        <img
+          alt=""
+          src="https://sandpack-bundler.vercel.app/img/take-it-easy.png"
+        />
+        <div className="summary">
+          <h2>Take It Easy</h2>
+          <p>Bvrnout ft. Mia Vaile</p>
+        </div>
+        <button
+          //[!code highlight]
+          onClick={() => {
+            //[!code highlight]
+            setIsPlaying(!isPlaying);
+            //[!code highlight]
+          }}
+        >
+          {isPlaying ? <Pause /> : <Play />}
+          <VisuallyHidden>Toggle playing</VisuallyHidden>
+        </button>
+
+        <audio
+          ref={audioRef}
+          src={src}
+          onEnded={() => {
+            setIsPlaying(false);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default MediaPlayer;
+```
+
+**解决方案 2：回调表单**
+
+```jsx
+import React from "react";
+import { Play, Pause } from "react-feather";
+
+import VisuallyHidden from "./VisuallyHidden";
+
+function MediaPlayer({ src }) {
+  const [isPlaying, setIsPlaying] = React.useState(false);
+
+  const audioRef = React.useRef();
+
+  //[!code highlight]
+  React.useEffect(() => {
+    //[!code highlight]
+    function handleKeyDown(event) {
+      //[!code highlight]
+      if (event.code === "Space") {
+        //[!code highlight]
+        setIsPlaying((currentIsPlaying) => {
+          //[!code highlight]
+          return !currentIsPlaying;
+          //[!code highlight]
+        });
+        //[!code highlight]
+      }
+      //[!code highlight]
+    }
+    //[!code highlight]
+
+    //[!code highlight]
+    window.addEventListener("keydown", handleKeyDown);
+    //[!code highlight]
+
+    //[!code highlight]
+    return () => {
+      //[!code highlight]
+      window.removeEventListener("keydown", handleKeyDown);
+      //[!code highlight]
+    };
+    //[!code highlight]
+  }, []);
+
+  React.useEffect(() => {
+    //[!code highlight]
+    if (isPlaying) {
+      //[!code highlight]
+      audioRef.current.play();
+      //[!code highlight]
+    } else {
+      //[!code highlight]
+      audioRef.current.pause();
+      //[!code highlight]
+    }
+    //[!code highlight]
+  }, [isPlaying]);
+
+  return (
+    <div className="wrapper">
+      <div className="media-player">
+        <img
+          alt=""
+          src="https://sandpack-bundler.vercel.app/img/take-it-easy.png"
+        />
+        <div className="summary">
+          <h2>Take It Easy</h2>
+          <p>Bvrnout ft. Mia Vaile</p>
+        </div>
+        <button
+          //[!code highlight]
+          onClick={() => {
+            //[!code highlight]
+            setIsPlaying(!isPlaying);
+            //[!code highlight]
+          }}
+        >
+          {isPlaying ? <Pause /> : <Play />}
+          <VisuallyHidden>Toggle playing</VisuallyHidden>
+        </button>
+
+        <audio
+          ref={audioRef}
+          src={src}
+          onEnded={() => {
+            setIsPlaying(false);
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+export default MediaPlayer;
+```
+
+</Accordion>
+
+</Accordions>
+
+</Callout>
+
+<Callout type='warn' title='事件冒泡'>
+
+在我们上面的实现中，用户体验存在一个小但恼人的 bug。
+
+这与 useEffect 或我们在本模块中讨论的内容无关，但我想分享一个关于这个主题的简短视频，以防你遇到这个问题。
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+我们的实现存在一个用户体验漏洞：如果我们聚焦按钮，然后按下空格键，歌曲开始播放然后立即停止，仅产生几分之一秒的音频。
+
+这是因为现代浏览器内置的一个无障碍功能：聚焦一个按钮并按下空格键或回车键将模拟对该按钮的点击，触发任何附加的 onClick 处理程序。
+
+这是一个问题，因为这意味着按钮 onClick 和全局 keydown 回调函数都在触发。我们最终以光速来回切换 isPlaying 。
+
+要解决这个问题，我们可以在按钮中添加以下代码：
+
+```jsx
+<button
+  //[!code highlight]
+  onKeyDown={(event) => {
+    //[!code highlight]
+    if (event.code === "Space") {
+      //[!code highlight]
+      event.stopPropagation();
+      //[!code highlight]
+    }
+    //[!code highlight]
+  }}
+  onClick={() => {
+    setIsPlaying(!isPlaying);
+  }}
+/>
+```
+
+要理解这里发生了什么，我们需要谈谈事件冒泡。
+
+当我们在一个 DOM 节点上触发一个事件时，该事件会沿着树向上“冒泡”。在按钮上触发了一个 keydown 事件，但也会在它的父节点、祖父节点以及曾祖父节点上触发……
+
+这就是允许我们注册全局事件监听器的原因！ window 对象是 DOM 中的顶层元素，因此所有事件最终都会冒泡到它。
+
+通常，当我们聚焦按钮并按下“空格”时，该事件会在按钮上触发，但它也会在 window 对象上触发，并且在两者之间的每个元素上触发。但我们可以通过 event.stopPropagation() 来简化这个过程。
+
+该方法确保 keydown 事件在此元素停止，不会向上继续。这样，窗口级别的 keydown 事件就不会看到该事件。它被视为对按钮的点击，因此一切都像我们单击了按钮一样工作。
+
+要明确的是，这与 React 无关。 stopPropagation() 是 DOM 的一部分，而不是 React。但我想在这里分享这个方法，以防你遇到这个问题并错误地认为这是你代码的问题。
+
+</Accordion>
+
+</Accordions>
+
+</Callout>
+
+这是我们的最终实现：
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "MediaPlayer.js": secondMediaPlayerJsCode,
+    "VisuallyHidden.js": secondVisuallyHiddenJsCode,
+    "styles.css": { code: secondStylesCssCode, hidden: true },
+  }}
+  customSetup={{
+    dependencies: {
+      "react-feather": "latest",
+    },
+  }}
+  template="react"
+/>

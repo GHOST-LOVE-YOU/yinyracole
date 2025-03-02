@@ -1,0 +1,158 @@
+---
+title: 异步Effect抓取
+description: 异步Effect抓取
+---
+
+import AppJsCode from "./code/App.js.example";
+
+假设我们想在挂载时获取一些数据，并且我们不想使用 SWR。我们将在一个 useEffect 钩子内发出一个 fetch 请求。
+
+使用 async/await 语法 👀，大多数开发人员会尝试这样做：
+
+```jsx
+React.useEffect(async () => {
+  const response = await fetch(ENDPOINT);
+  const json = await response.json();
+
+  setTemperature(json.temperature);
+}, []);
+```
+
+为了使用 await 关键字，我们需要在 async 函数内部。我们的Effect回调函数设为异步似乎是合乎逻辑的，但不幸的是，这并不奏效：
+
+<Sandpack
+  files={{
+    "App.js": { code: AppJsCode, active: true },
+  }}
+  template="react"
+/>
+
+除了神秘的错误信息，我们还在控制台中看到以下警告：
+
+<Callout type='error'>
+
+Warning: useEffect must not return anything besides a function, which is used for clean-up.
+
+警告：useEffect 不能返回除用于清理的函数之外的任何内容。
+
+It looks like you wrote useEffect(async () => ...) or returned a Promise. Instead, write the async function inside your effect and call it immediately.
+
+看起来你写了 useEffect(async () => ...) 或返回了一个 Promise。相反，请在你的 effect 中编写异步函数并立即调用它。
+
+</Callout>
+
+我们不允许将Effect回调设为异步。相反，我们需要在Effect内部创建另一个函数。这是我通常解决这个问题的方法：
+
+```jsx
+React.useEffect(() => {
+  // Create an async function within our effect:
+  async function runEffect() {
+    const response = await fetch(ENDPOINT);
+    const json = await response.json();
+
+    setTemperature(json.temperature);
+  }
+
+  // Immediately call this function to run the effect:
+  runEffect();
+}, []);
+```
+
+本质上，我们将所有的Effect逻辑移入这个异步函数。我喜欢使用像 runEffect 这样的通用名称，而不是像 fetchTemperature 这样的特定名称，以明确表示我们将与Effect相关的所有内容移动到这个函数中。
+
+如果我们的Effect有一个清理函数，那么这个清理函数不应该包含在我们的 runEffect 函数中：
+
+```jsx
+React.useEffect(() => {
+  async function runEffect() {
+    // ... Effect logic here
+  }
+
+  runEffect();
+
+  return () => {
+    //  ... Cleanup logic here
+  };
+}, []);
+```
+
+明确一点：当我们使用像 SWR 这样的数据获取库时，我们根本不会遇到这个问题。这是这些工具为我们解决的众多问题之一！
+
+但我还是想讨论这个，因为并不是每个人都使用数据获取库。而且即使你使用，也可能仍然有想要进行与数据获取无关的某种异步操作的情况。
+
+<Callout type='info' title='为什么不允许使用异步Effect回调'>
+
+直接创建并立即调用一个异步函数可能看起来很傻。为什么我们不能将异步函数直接传递给 useEffect ??
+
+关于异步函数，首先要理解的是它们总是返回一个 Promise。
+
+例如：
+
+```jsx
+async function quickExample() {
+  return 5;
+}
+
+const result = quickExample();
+console.log(result); // Promise
+```
+
+这个 quickExample 函数实际上并不返回数字 5 。它返回一个解析为 5 的 Promise。这对于所有异步函数都是正确的，即使是那些不 await 任何内容的函数。
+
+这很重要，因为 React 期望我们返回一个清理函数，而不是一个 Promise！
+
+考虑这样的Effect：
+
+```jsx
+React.useEffect(() => {
+  // Effect logic: start an interval
+  const intervalId = window.setInterval(() => {}, 1000);
+
+  // Cleanup logic: stop the interval:
+  return () => {
+    window.clearInterval(intervalId);
+  };
+}, []);
+```
+
+当 React 运行我们的Effect时，我们传递给它一个清理函数。当依赖项发生变化时，React 将调用这个清理函数，并在组件卸载时调用。
+
+现在假设我们在这个Effect中有一些异步工作要做：
+
+```jsx
+React.useEffect(async () => {
+  const intervalId = window.setInterval(() => {}, 1000);
+
+  await someLongRunningProcess();
+
+  // Even though we're returning a function, it'll actually
+  // return a *promise* that resolves to a function:
+  return () => {
+    window.clearInterval(intervalId);
+  };
+});
+```
+
+当 React 运行这个Effect时，它没有接收到清理函数，而是接收到了一个 Promise。
+
+如果组件在长时间运行的过程中卸载，会发生什么？React 无法进行任何清理，因为我们还没有将清理函数交给 React！
+
+为了避免像这样的麻烦情况，React 团队决定Effect回调不能是异步函数。这会引发太多复杂的问题。
+
+相反，我们可以将我们的异步逻辑封装在一个异步函数中。这样，React 就可以立即接收到清理函数：
+
+```jsx
+React.useEffect(() => {
+  async function runEffect() {
+    /* Async stuff */
+  }
+  runEffect();
+
+  // Cleanup function is returned right away:
+  return () => {
+    /* Cleanup stuff */
+  };
+});
+```
+
+</Callout>

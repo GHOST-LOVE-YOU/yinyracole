@@ -1,0 +1,105 @@
+---
+title: Effect Lint 规则
+description: Effect Lint 规则
+---
+
+import AppJsCode from "./code/App.js.example";
+
+<Accordions>
+
+<Accordion title='视频摘要' >
+
+假设我们有以下代码：
+
+```jsx
+function App() {
+  const [count, setCount] = React.useState(0);
+
+  React.useEffect(() => {
+    console.log(count);
+  }, []);
+
+  return (
+    <>
+      <p>The count is: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </>
+  );
+}
+```
+
+如果我们尝试运行这段代码，我们会收到来自 React 的 lint 警告，告诉我们违反了 ESLint 规则： react-hooks/exhaustive-deps 。
+
+这是最常见的规则之一，很多人都在试图理解如何修复它。不幸的是，最常见的解决方案之一是禁用警告，而不是修复它：
+
+```jsx
+React.useEffect(() => {
+  console.log(count);
+  // eslint-disable-next-line
+}, []);
+```
+
+这个神奇的咒语会让警告沉默，但它并不能解决问题！
+
+这个规则并不是随意的，它是出于一个很好的理由：如果我们不在依赖数组中包含 count 状态变量，我们将陷入一个极其混乱的局面。
+
+每次我们通过调用 setCount 重新渲染时，我们都会拍摄一个新的快照，并创建一个新的 count 变量。这意味着 count 变量有不同的“版本”，每个快照对应一个版本。
+
+通过不将 count 包含在依赖数组中，这意味着我们的Effect是“冻结在时间中”；Effect内部的 console.log(count) 代码仅能访问第一个 count 变量，即等于 0 的那个。
+
+这导致了这种令人困惑的情况，当状态发生变化时：
+
+```jsx
+function App() {
+  // This `count` is equal to 3:
+  const [count, setCount] = React.useState(0);
+
+  React.useEffect(() => {
+    // This `count` is equal to 0:
+    console.log(count);
+  }, []);
+
+  return (
+    <>
+      {/* this `count` is equal to 3: */}
+      <p>The count is: {count}</p>
+      <button onClick={() => setCount(count + 1)}>Increment</button>
+    </>
+  );
+}
+```
+
+我们的Effect与其他代码不同步，这意味着我们同时看到了状态的多个版本。这让我感到困惑。
+
+要解决这个问题，我们需要将 count 添加到依赖数组中：
+
+```jsx
+React.useEffect(() => {
+  console.log(count);
+}, [count]);
+```
+
+这意味着每当我们调用 setCount 时，Effect将重新运行，随着状态的变化保持同步。
+
+</Accordion>
+
+</Accordions>
+
+这是视频中的沙盒 + 内存可视化:
+
+<Sandpack
+  files={{
+    "App.js": AppJsCode,
+  }}
+  template="react"
+/>
+
+![screenshot-20250228-164521](/react/module3/screenshot-20250228-164521.png)
+
+<Callout type='info' title='解决方法？'>
+
+在少数情况下，我们需要在Effect中访问状态变量的最新“版本”，但我们希望该Effect在变量发生变化时不重新运行。
+
+我们将在本模块稍后讨论如何应对这种情况，当我们谈论陈旧值时。
+
+</Callout>

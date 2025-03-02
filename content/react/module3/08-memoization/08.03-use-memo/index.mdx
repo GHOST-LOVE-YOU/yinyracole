@@ -1,0 +1,255 @@
+---
+title: useMemo Hook
+description: useMemo Hook
+---
+
+import firstAppJsCode from "./code/first/App.js.example";
+import secondAppJsCode from "./code/second/App.js.example";
+import secondUseTimeJsCode from "./code/second/use-time.js.example";
+import thirdAppJsCode from "./code/third/App.js.example";
+import thirdUseTimeJsCode from "./code/third/use-time.js.example";
+import forthAppJsCode from "./code/forth/App.js.example";
+import forthBoxesJsCode from "./code/forth/Boxes.js.example";
+import forthStylesCssCode from "./code/forth/styles.css.example";
+import fifthAppJsCode from "./code/fifth/App.js.example";
+import fifthBoxesJsCode from "./code/fifth/Boxes.js.example";
+import fifthStylesCssCode from "./code/fifth/styles.css.example";
+
+在上一课中，我们看到 React.memo 帮助器如何让我们记忆一个组件，这样它只在其 props/state 发生变化时重新渲染。
+
+在这一课中，我们将学习另一种让我们进行不同类型记忆化的工具： useMemo 钩子。
+
+useMemo 的基本理念是它允许我们在渲染之间“记住”一个计算值。
+
+我们通常使用这个钩子进行性能优化。它可以以两种独立但相关的方式使用：
+
+1. 我们可以减少在特定渲染中需要完成的工作量。
+2. 我们可以减少组件重新渲染的次数。
+
+让我们一个一个地谈谈这些策略。
+
+## 用例 1：密集计算
+
+假设我们正在构建一个工具，以帮助用户找到 0 和 selectedNum 之间的所有质数，其中 selectedNum 是用户提供的值。质数是只能被 1 和它本身整除的数字，比如 17。
+
+这是一个可能的实现。尝试更改“Your number”以查看其工作方式：
+
+<Sandpack
+  files={{
+    "App.js": firstAppJsCode,
+  }}
+  template="react"
+/>
+
+在这段代码中，我们有一个单一的状态， selectedNum 。使用一个 for 循环，我们手动计算 0 和 selectedNum 之间的所有素数。用户可以通过编辑受控的数字输入来更改 selectedNum 。
+
+这段代码需要大量的计算。如果用户选择一个大的 selectedNum ，我们需要检查成千上万的数字，看看每一个是否是质数。虽然有比我上面使用的算法更高效的质数检查算法，但这始终是计算密集型的。
+
+现在，我们无法完全避免这项工作。我们至少需要做一次所有这些工作，每当用户选择一个新号码时还需要再做一次。但如果我们无故进行这项工作，就可能会遇到性能问题。
+
+例如，假设我们的例子还包括一个数字时钟，使用我们创建的 useTime 钩子。
+
+<Sandpack
+  files={{
+    "App.js": secondAppJsCode,
+    "use-time.js": secondUseTimeJsCode,
+  }}
+  customSetup={{
+    dependencies: {
+      "date-fns": "latest",
+    },
+  }}
+  template="react"
+/>
+
+我们的应用现在有两个状态， selectedNum 和 time 。每秒一次， time 变量会更新以反映当前时间，这个值用于在右上角显示数字时钟。
+
+问题是：每当这些状态变量之一发生变化时，组件就会重新渲染，我们会重新运行所有这些耗时的计算。而且因为 time 每秒变化一次，这意味着即使用户选择的数字没有改变，我们也在不断重新生成那个质数列表！
+
+![clock-prime](/react/module3/clock-prime.png)
+
+在 JavaScript 中，我们只有一个主线程，我们通过每秒一次不断运行这段代码来使其保持非常忙碌。这意味着当用户试图做其他事情时，应用程序可能会感到缓慢，尤其是在低端设备上。
+
+但是如果我们可以“跳过”这些计算呢？如果我们已经有了一个给定数字的质数列表，为什么不重复使用这个值，而不是每次都从头计算呢？
+
+这正是 useMemo 让我们能够做到的。它看起来是这样的：
+
+```jsx
+const allPrimes = React.useMemo(() => {
+  const result = [];
+
+  for (let counter = 2; counter < selectedNum; counter++) {
+    if (isPrime(counter)) {
+      result.push(counter);
+    }
+  }
+
+  return result;
+}, [selectedNum]);
+```
+
+useMemo 需要两个参数：
+
+1. 一段需要执行的工作，封装在回调函数中
+2. 依赖项列表
+
+在挂载期间，当这个组件第一次渲染时，React 会调用这个函数来运行所有的逻辑，计算所有的质数。我们从这个函数返回的任何内容都会分配给 allPrimes 变量。
+
+然而，对于每个后续渲染，React 必须做出一个选择。它应该：
+
+1. 再次调用该函数，以重新计算值，或者
+2. 重新使用它上一次完成此工作的数据。
+
+要回答这个问题，React 会查看提供的依赖列表。它们中有哪个自上一个渲染以来发生了变化吗？如果有，React 将重新运行提供的函数，以计算一个新值。否则，它将跳过所有这些工作，重用之前计算的值。
+
+useMemo 本质上就像一个小缓存，而依赖关系是缓存失效策略。
+
+在这种情况下，我们基本上是在说“仅当 selectedNum 发生变化时重新计算质数列表”。当组件由于其他原因（例如 time 状态变量变化）重新渲染时， useMemo 会忽略该函数并传递缓存的值。
+
+<Callout type='info' title='与其他事物的相似性'>
+
+您可能已经注意到： useMemo 的结构很像 useEffect 的结构！它们都需要一个回调函数和一个依赖数组。
+
+主要区别在于 useMemo 用于在渲染过程中计算一个值。与此同时，Effects 在渲染后调用回调函数，以将 React 状态与某种外部系统同步。
+
+你可能也注意到了： useMemo 钩子与我们在上一课中看到的 React.memo 助手名称相似。
+
+这不是巧合！事实上，他们都做类似的事情：
+
+- React.memo 记忆化渲染组件的结果，仅在 props 变化时重新运行。
+- React.useMemo 记忆化计算结果，仅在依赖项变化时重新运行。
+
+在本课稍后我们会详细讨论它们是如何互动的。
+
+</Callout>
+
+这是我们解决方案的实时版本，实现了 useMemo 钩子：
+
+<Sandpack
+  files={{
+    "App.js": thirdAppJsCode,
+    "use-time.js": thirdUseTimeJsCode,
+  }}
+  customSetup={{
+    dependencies: {
+      "date-fns": "latest",
+    },
+  }}
+  template="react"
+/>
+
+## 用例 2：保留引用
+
+所以我们已经看到 useMemo 如何通过缓存昂贵的计算来帮助提高性能。这是这个钩子可以使用的方式之一，但并不是唯一的方式！让我们谈谈其他用例。
+
+在下面的例子中，我创建了一个 Boxes 组件。它显示了一组彩色方框，用于某种装饰目的。
+
+我还有一点无关的状态，即用户的Name。
+
+<Sandpack
+  files={{
+    "App.js": forthAppJsCode,
+    "Boxes.js": forthBoxesJsCode,
+    "styles.css": forthStylesCssCode,
+  }}
+  template="react"
+/>
+
+我们的 Boxes 组件通过 React.memo() 使其变得纯净。这意味着它应该仅在其属性发生变化时重新渲染。
+
+然而，每当用户更改他们的名字时， PureBoxes 也会重新渲染！
+
+这是一个显示这种动态的图表。尝试在文本输入中输入，注意两个组件是如何重新渲染的：
+
+<video controls loop muted playsInline width="50%">
+  <source src="/react/module3/render-with-props-graph.mp4" type="video/mp4" />
+</video>
+
+PureBoxes 组件只有 1 个属性， boxes ，而且看起来我们在每次渲染时都给它提供相同的数据。总是一样的东西：一个红色框，一个宽紫色框，一个黄色框。我们确实有一个 boxWidth 状态变量会影响 boxes 数组，但我们并没有改变它！
+
+问题是：每次 React 重新渲染时，我们都会生成一个全新的数组。它们在值方面是等价的，但在引用方面却不是。
+
+我认为如果我们暂时忘记 React，谈谈普通的 JavaScript 会很有帮助。让我们看一个类似的情况：
+
+```jsx
+function getNumbers() {
+  return [1, 2, 3];
+}
+
+const firstResult = getNumbers();
+const secondResult = getNumbers();
+
+console.log(firstResult === secondResult);
+```
+
+你怎么看？ firstResult 是否等于 secondResult ？
+
+在某种意义上，它们是的。两个变量具有相同的结构， [1, 2, 3] 。但这并不是 === 运算符实际上检查的内容。
+
+相反， === 正在检查两个表达式是否是相同的东西。
+
+这是我们在“不可变性重访”课程中讨论过的内容。当涉及到对象和数组时，仅仅看起来相同是不够的。它们必须是相同的。两个变量需要指向计算机内存中持有的同一实体。
+
+每次我们调用 getNumbers 函数时，我们都会创建一个全新的数组，这是计算机内存中存储的一个独特事物。如果我们多次调用它，我们将在内存中存储多个该数组的副本。
+
+请注意，简单数据类型——如字符串、数字和布尔值——可以按值进行比较。但在数组和对象的比较中，它们仅按引用进行比较。有关此区分的更多信息，请查看 Dave Ceddia 的这篇精彩博客文章：《[JavaScript 中的引用视觉指南](https://daveceddia.com/javascript-references/)》。
+
+将这一点带回到 React：我们的 PureBoxes React 组件也是一个 JavaScript 函数。当我们渲染它时，我们调用那个函数：
+
+```jsx
+// Every time we render this component, we call this function...
+function App() {
+  // ...and wind up creating a brand new array...
+  const boxes = [
+    { flex: boxWidth, background: "hsl(345deg 100% 50%)" },
+    { flex: 3, background: "hsl(260deg 100% 40%)" },
+    { flex: 1, background: "hsl(50deg 100% 60%)" },
+  ];
+
+  // ...which is then passed as a prop to this component!
+  return <PureBoxes boxes={boxes} />;
+}
+```
+
+当 name 状态改变时，我们的 App 组件会重新渲染，这会重新运行所有代码。我们构建一个全新的 boxes 数组，并将其传递给我们的 PureBoxes 组件。
+
+并且 PureBoxes 重新渲染了，因为我们给了它一个全新的数组！
+
+boxes 数组的结构在渲染之间没有改变，但这并不重要。所有 React 知道的是， boxes 属性接收了一个新创建的、前所未见的数组。
+
+要解决这个问题，我们可以使用 useMemo 钩子：
+
+```jsx
+const boxes = React.useMemo(() => {
+  return [
+    { flex: boxWidth, background: "hsl(345deg 100% 50%)" },
+    { flex: 3, background: "hsl(260deg 100% 40%)" },
+    { flex: 1, background: "hsl(50deg 100% 60%)" },
+  ];
+}, [boxWidth]);
+```
+
+与我们之前看到的素数示例不同，这里我们不担心计算开销。我们唯一的目标是保留对特定数组的引用。
+
+我们将 boxWidth 列为依赖项，因为我们希望当用户调整红色框的宽度时， PureBoxes 组件能够重新渲染。
+
+我认为快速草图将有助于说明。在之前，我们为每个快照创建一个全新的数组：
+
+![snapshots-default](/react/module3/snapshots-default.png)
+
+然而，使用 useMemo 时，我们正在重新使用一个之前创建的 boxes 数组：
+
+![snapshots-with-memo](/react/module3/snapshots-with-memo.png)
+
+通过在多个渲染中保持相同的引用，我们允许纯组件按照我们希望的方式运作，忽略那些不影响用户界面的渲染。
+
+这是一个更新的沙箱，包括 useMemo 修复。尝试在“名称”字段中键入内容，并注意控制台：
+
+<Sandpack
+  files={{
+    "App.js": fifthAppJsCode,
+    "Boxes.js": fifthBoxesJsCode,
+    "styles.css": fifthStylesCssCode,
+  }}
+  template="react"
+/>

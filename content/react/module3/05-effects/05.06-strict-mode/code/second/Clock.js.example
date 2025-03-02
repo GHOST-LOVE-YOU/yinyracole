@@ -1,0 +1,28 @@
+import React from 'react';
+import { format } from 'date-fns';
+
+function Clock() {
+  const [time, setTime] = React.useState(new Date());
+
+  React.useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setTime(new Date());
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, []);
+
+  // You should see this log *twice* per second
+  // in Strict Mode, instead of only once.
+  console.log('Clock re-render!');
+
+  return (
+    <p className="clock">
+      {format(time, 'hh:mm:ss a')}
+    </p>
+  );
+}
+
+export default Clock;
