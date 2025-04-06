@@ -12,6 +12,13 @@ export default function HomePage() {
         >
           /docs/react
         </Link>{" "}
+        or
+        <Link
+          href="/docs/deeplearnning"
+          className="text-fd-foreground font-semibold underline"
+        >
+          /docs/deeplearnning
+        </Link>{" "}
         and see the documentation.
       </p>
       <p className="text-fd-muted-foreground">

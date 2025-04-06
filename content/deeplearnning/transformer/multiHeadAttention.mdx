@@ -1,0 +1,48 @@
+---
+title: 多头注意力机制
+description: 多头注意力机制
+---
+
+## 实现一
+
+```python
+class Head(nn.Module):
+    def __init__(self, d_model, head_size):
+        super().__init__()
+        self.head_size = head_size
+        self.query = nn.Linear(d_model, head_size)
+        self.key = nn.Linear(d_model, head_size)
+        self.value = nn.Linear(d_model, head_size)
+
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, q, k, v, mask=None):
+        q = self.query(q)
+        k = self.key(k)
+        wei = q @ k.transpose(-2, -1) * (self.head_size**-0.5)
+        if mask is not None:
+            wei = wei.masked_fill(mask == 0, float("-inf"))
+        wei = F.softmax(wei, dim=-1)
+        wei = self.dropout(wei)
+
+        v = self.value(v)
+        return wei @ v
+
+
+class MultiHeadAttention(nn.Module):
+    def __init__(self, d_model, n_heads):
+        super().__init__()
+        assert d_model % n_heads == 0
+
+        self.heads = nn.ModuleList(
+            [Head(d_model, d_model // n_heads) for _ in range(n_heads)]
+        )
+        self.pro = nn.Linear(d_model, d_model)
+        self.dropout = nn.Dropout(0.1)
+
+    def forward(self, q, k, v, mask):
+        out = torch.cat([h(q, k, v, mask) for h in self.heads], dim=-1)
+        out = self.dropout(out)
+        return self.dropout(out)
+
+```
