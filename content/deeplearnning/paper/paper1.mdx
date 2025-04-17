@@ -1,0 +1,287 @@
+---
+title: paper1
+description: paper1
+---
+
+# AI Choreographer: Music Conditioned 3D Dance Generation with AIST++
+
+<Callout type='info' title='初印象'>
+
+有三分之一的内容都在讲自己改进的数据集
+
+</Callout>
+
+## 数据集
+
+改进AIST, 发布了公共数据集AIST++, 1408个序列, 5.2个小时, 包括10种舞蹈类型, 多镜头视角
+
+测试集为每种类型舞蹈选两个舞者, 每个舞者选两种与它匹配的音乐, 也就是说测试集是40条, 其他是训练集
+
+## 模型架构
+
+这个就是transformer架构, 论文中总结了他们做的3点改进
+
+1. 使用了全注意力
+   ![full-attention](/deeplearnning/paper/full-attention.png)
+2. 一次预测未来N个值
+3. 两种模式(motion, music)的提前融合
+
+最后附上模型架构图
+
+![Full-Attention-Cross-model-Transform](/deeplearnning/paper/Full-Attention-Cross-model-Transform.png)
+
+## 评估
+
+定量指标有:
+
+- motion质量(FID)
+- 多样性(平均欧几里得距离)
+- motion和music的关联(Beat Alignment Score)
+
+<Callout type='info' >
+
+这些指标在该领域其他paper经常出现
+
+</Callout>
+
+## 补充
+
+AIST++数据集在后面的论文中经常出现, FACT模型架构就是一个传统的Transformer架构, 没什么特殊的
+
+# X-Dancer: Expressive Music to Human Dance Video Generation
+
+<Callout type='info' title='初印象'>
+
+作者使用transformer去捕捉music和motion之间的关系, 然后将预测到的motion用于指导diffusion生成高保真的图片, 号称是业界首个根据一张图片生成舞蹈视频的实践
+
+在处理motion中, 作者将motion分成左手, 右手, 头部, 等5个部分, 为了更好的捕捉到手部和脸部的特征, 太可惜了, 在看aist++那篇论文(应该是这篇, 反正是随记不用负什么责任就不回去考证了)时, 作者将motion分为了上下两部分时取得了更好的效果, 我也想到了类似的做法
+
+当时师兄跟我解释了使用根坐标和转轴代替一个个独立的坐标来表示motion, 我的理解是相当于给了模型一部分先验知识, 告诉了模型一个"人"应该是怎样的, 节点之间有怎样的关系, "跳舞"实际就是节点间角度的变换, 而节点间的距离是没法改变的, 后续我们甚至可以通过改变关节间的距离来匹配不同的人
+
+在看完aist++那篇论文后, 有了拆解骨骼的想法, 因为当我们做某个动作时, 我们说
+
+> 双脚张开, 以脚踝为轴旋转50度, 腰跟随脚踝旋转, 然后双手张开, 微曲, 左手掌心向上, 右手掌心向下, 头偏向右手向前
+
+注意到我们对脚, 手部, 头部, 腰部分别进行了表述, 最后表达了一个动作, 从该动作到下一个动作, 我相信也是可以以前一个动作为基础表示的
+
+在讨论这种方式的好处时, aist++好像没有解释, 只是说消融效果更好, 而X-Dancer之所以分多部分主要是为了捕捉到更丰富的脸部和手部信息
+
+其实在写这里的时候我已经读了好几篇论文, 我觉得X-Dancer是纯粹的diffusion框架, 它自己也说了它的目标是生成高保真, 具有生活气息的tiktok风格视频, 这类视频一旦达到一定的保真度就可以在短视频平台掀起一股潮流, 毕竟短视频只要吸引眼球就好
+
+但是这类视频是经不起专业人士评价的, 在多项指标中表现并不好, 可控程度也有限, 但是我还是很看好这个方向, 我觉得作者将motion预测和图像生成分离开了, 这很好, transform就是擅长处理长距离依赖, diffusion在生成高保真图像上有天然的优势
+
+作者不应该止步于"not exhibit the precision found in professional dancer videos", 这里是有很大改进空间的
+
+1. 它使用了二维motion, 可以获得更多的数据, 3D数据当然更好, 但是获取高精度大量数据太难了, 相反2D数据就好获取得多
+2. 在做这个任务前, 作者可以先尝试另一个领域, 我不清楚有没有人在做, 給一段舞蹈视频, 和另一个人的静态图片, 替换视频中跳舞的人, diffusion的输入一定要是提取到的motion, 一定要把这个任务的质量做到非常好在做music-dance任务
+3. transform, 根据music预测motion, 这个前面提到了一点, 其实具体怎么优化还没有太多想法, 再看点论文再评价
+
+后续我会关注一下video->2D/3D motion的发展现状
+
+</Callout>
+
+<Callout type='warn' title='04-19记'>
+
+这个可不可以做5个codebook, 然后一个动作由5个token决定, 一个transformer专门负责组合这些, 处理长距离我觉得Lodge那种两步处理的方式很好, 长度不用限制太死, 我们的关键帧就根据beat来, 另一个transform负责补全过程帧
+
+在音乐和motion的情感匹配方面, ChoreoMaster中将每个动作都打上了标签, 它的含义是这个动作更多的在类型A的音乐中出现, 可以往这个方向思考
+
+最后生成高保真还是得diffusion
+
+</Callout>
+
+## 数据集
+
+107,549个单眼录制的人类舞蹈表演, 包含室内和室外环境
+
+## 模型结构
+
+1. 数据表示
+
+也使用了VQ-VAE将motion token化, 采用了2D motion, 可以获得广泛的数据, 在music嵌入时使用和和motion一样的帧率, 保证同步
+
+2. Transformer
+
+用于music到dance motion的生成, motion被分成了5部分, 以获取更详细的手部和脸部信息
+
+# Bailando: 3D Dance Generation by Actor-Critic GPT with Choreographic Memory
+
+<Callout type='info' title='初印象'>
+
+核心在于memory, 把motion分为了上下两部分(上面说错了, 不是aist++中看到的, 是在这篇中看到的), 有一个codebook去存储N个动作
+
+</Callout>
+
+## 模型架构
+
+1. VQ-VAE
+
+   其实就是把motion映射到一个潜在空间, 然后总结N个代表性的动作, 原论文中还提到对上半身和下半身重新组合
+
+2. 多模态motion GPT
+
+   > 现在我们可以通过一系列量化的位置代码来表示任何舞蹈，因此舞蹈生成任务被重新定义为根据给定的音乐和现有的动作，从codebook中选择适当的代码以进行未来的动作。
+
+   upper motion和lower motion在开始就经过了VQ-VAE编码, 因此在开始就和music融合, 通过一个典型的Transformer架构, 最终输出为预测下一个token的概率分布, top-1 selection
+
+   噢还有, attention块用了一个cross-conditional causal注意力, 看图很好理解
+
+   ![cross-conditional-causal-attention](/deeplearnning/paper/cross-conditional-causal-attention.png)
+
+3. Actor-Critic GPT
+
+   这玩意怎么翻译我都不知道, gpt解释是一种强化学习框架, 核心思想是将策略学习(做什么动作)和价值评估(动作或状态好不好)分开，由两个不同的部分(或网络)来负责, 后面也没有看懂
+
+最后放一张模型架构图
+
+![bailando](/deeplearnning/paper/bailando.png)
+
+# ChoreoMaster: Choreography-Oriented Music-Driven Dance Synthesis
+
+<Callout type='info' title='初印象'>
+
+昨天花了8个小时没有看懂, 我甚至不知道它是怎么训练的, 他声称自己是第一个可以在生产环境中使用的高可控music to dance程序, 我觉得它是我目前读过的几篇论文中专业人士参与度最高的一篇, 给人的感觉是每个词都认识, 合在一起就不认识了, "beat", "phrase", "meter"专业名词需要专门去问gpt才能搞懂
+
+他的基本思想是图, 生成motion就是为了找到一条最佳路径, 除此之外, 我无法提取到更多的信息
+
+</Callout>
+
+# POPDG: Popular 3D Dance Generation with PopDanceSet
+
+<Callout type='info' title='初印象'>
+
+引入了新的数据集PopDanceSet, 开始讲人文美学, 优化的注意力快, DT-Attention, DF-Attention等多种Attention, 有专门的对齐模块
+
+还有我第一遍读这篇论文是在昨天, 当时觉得是一篇很好的论文, 今天再回看没有那种崇拜感了, 可能遗漏了什么地方?
+
+</Callout>
+
+## 数据集
+
+关于数据集有一个对比表, 19种genres, 132种subjects, 以美学为导向和配有歌词
+
+![PopDanceSet](/deeplearnning/paper/PopDanceSet.png)
+
+## 架构
+
+改进了iddpm, 由于我对iddpm都没完全搞懂, 就不深究了, 关于多种注意力块本来觉得没有什么创新, 但是转念一想这是我看过的第一篇在diffusion中用transform代替U-Net的文章, 并且不同的Attention块经过优化关注不同的信息, 也许是一个很好的创新
+
+![POPDG](/deeplearnning/paper/POPDG.png)
+
+<Callout type='error' title='04-18记'>
+
+前面的论文我在读的时候还是很认真, 起码是逐字逐字的在读, 回头看效率太低而且我吸收到的还是很浅显的内容, 后面会更换策略尝试粗读只检索关键信息
+
+</Callout>
+
+# Lodge: A Coarse to Fine Diffusion Network for Long Dance Generation Guided by the Characteristic Dance Primitives
+
+<Callout type='info' title='初印象'>
+
+特色是能生成长视频, 同时保持风格的一致性. 用diffusion两步生成, 第一步生成插帧, 第二步生成连贯的动作.
+
+它提到了local diffusion和global diffusion, 不清楚它是怎么做的
+
+有一个"foot-ground contact loss"增强与地面的交互
+
+</Callout>
+
+# Explore 3D Dance Generation via Reward Model from Automatically-Ranked Demonstrations
+
+<Callout type='info' title='初印象'>
+
+引入的模型叫做E3D2
+
+我有预感, 这篇文章再给我八个小时我也看不出名堂, 它指出了传统监督学习的3大问题:(1)多样性(2)自动回归错误累加(3)旋律对齐
+
+它提出了反向强化学习的方法以及一个奖励模型, 看了一眼结果在质量和多样性上都有一定提升, 看演示视频它上下半身的转动很奇怪
+
+</Callout>
+
+# DiffDance: Cascaded Human Motion Diffusion Model for Dance Generation
+
+<Callout type='info' title='初印象'>
+
+标题中有cascade二字, 指的是先生成低帧的数据(15), 然后以低帧数据和额外的时间步信息生成高帧数据(60), 核心也是diffusion transformer
+
+对音乐的处理没有使用主流的工具包, 用的Wav2CLIP Encoder, 节奏对其方面, 使用了"Classifier-free Guidance", 好像就是一个对齐嵌入空间
+
+</Callout>
+
+# FineDance: A Fine-grained Choreography Dataset for 3D Full Body Dance Generation
+
+<Callout type='info' title='初印象'>
+
+又一个新的数据集FineDance, 时长14.6小时, 包含22种题材, 27位专业舞蹈演员, 质量高, 包含手部动作
+
+在采样语音特征时罕见的使用了梅尔频谱图, 声称融合了图生成和图合成, 应该是指FDGN生成多个可供选择的片段, 然后GCRM选择最好的一个, 核心也是diffusion transformer
+
+在保证多样性方面, 在music采样中添加了噪声, 手部和身体部分用了两个不同的网络, 最后有一个refine net去协调手部和身体的动作
+
+</Callout>
+
+# TM2D: Bimodality Driven 3D Dance Generation via Music-Text Integration
+
+<Callout type='info' title='初印象'>
+
+看过的第一篇music+text to motion, text和music共享一个codebook, 共享一个motion decoder, 这个模型有一个亮点是可以用文本指定对motion的某个部位进行微调, 可控性很高, 模型架构挺常见的呀, 质量竟然意外的不错
+
+在文本操作不是简单的替换, 而是晚期加权求和, 还提出了两种新的评估方法
+
+</Callout>
+
+# EDGE: Editable Dance Generation From Music
+
+<Callout type='info' title='初印象'>
+
+这篇和bailando都是高引文章, 读前面的paper介绍EDGE好像是第一次把diffusion引入了music-dance任务
+
+至于这个模型有两个亮点, 可编辑和生成长视频.
+
+可编辑用的标准掩蔽去噪技术, 如果我没记错的话, 这个技术在diffusion中可以只编辑图片的特定区域的技术, 在该任务中就是可以做到提供一段motion补全缺失部分.
+
+至于生成长视频这个就很巧妙了, 一张正方形的照片, 分为左右两部分, 我永远只提供左边的部分, 让模型去生成右边的部分, 再以新生成的部分作为左边的部分生成新的右边的部分, 由此生成长视频
+
+它任务以前的评价指标存在问题, 很重视真实用户的评价, 因此引入了新的评价函数
+
+</Callout>
+
+<Callout type='error' title='04-20记'>
+
+以前我觉得一帧的数据是二维的, 读到这里才意识到是一维的, 这就推翻了我之前的很多观点, 也解释了之前的很多疑问, 调研做完必须做个实验了
+
+</Callout>
+
+![EDGE](/deeplearnning/paper/EDGE.png)
+
+# PC-Dance: Posture-controllable Music-driven Dance Synthesis
+
+<Callout type='info' title='初印象'>
+
+一篇网易的, 一篇腾讯的, 涉及生产环境时都特别强调了可编辑性.
+
+又是一篇基于图合成寻找最佳路径的, 真的短时间看不懂~
+
+</Callout>
+
+# Dancing to Music
+
+<Callout type='info' title='初印象'>
+
+用DU-VAE编解码, 核心架构是GAN, 设计了一个节拍检测器检测运动中的节拍, 之后的paper用的好像都是这种方式
+
+在数据集方面, 2D motion是通过OpenPose从视频中提取的, 用的坐标表示方法, 临近值插入来处理缺失值, 音乐只提取了MFCC的13维特征
+
+</Callout>
+
+# Generating Diverse and Natural 3D Human Motions from text
+
+<Callout type='info' title='初印象'>
+
+text2motion任务, 可以和上面那篇music+text2dance对比起来看, 都是训练了一个AVE自动编码器, 由于motion长度未知, 专门设计了一个CNN网络, 转化成了一个密度估计问题, 确定motion length
+
+在最终的text2motion部分, 包含一个文本编码器和一个由生成器 Fθ、后验 Fϕ 和先验 Fψ 组成的时间变分自编码器模型。在文本编码器, 融入了text的词性标记, 如动作, 部位, 位置, 还引入了局部词注意力.
+
+所用的数据集应该不需要关注, 为humanML3D.
+
+</Callout>
