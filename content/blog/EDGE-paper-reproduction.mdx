@@ -1,0 +1,173 @@
+---
+title: EDGE论文复现
+description: EDGE论文复现
+---
+
+# 配置代理
+
+使用了[该项目](https://github.com/VocabVictor/clash-for-AutoDL)
+
+```bash
+git clone https://github.do/github.com/VocabVictor/clash-for-AutoDL.git
+cd clash-for-AutoDL
+cp .env.example .env
+vim .env
+```
+
+填写下面配置
+
+```text
+export CLASH_URL='https://0b96e976-9ec3-44c0-aa2b-30bf8b0792ea.com/api/v1/client/subscribe?token=7ffcb59ac7b00ffd5bcac8384108ab25'
+export CLASH_SECRET=''
+```
+
+安装lsof并运行脚本
+
+```bash
+apt-get update
+apt-get install lsof
+source ./start.sh
+```
+
+# 安装包
+
+```bash
+
+# 安装sndfile 和 ffmpeg
+sudo apt-get update
+sudo apt-get install libsndfile1 ffmpeg
+
+# 安装jukemirlib
+pip install git+https://github.com/rodrigo-castellon/jukemirlib.git
+
+# 安装wandb
+pip install wandb einops p_tqdm
+
+# 安装pytorch3d(很慢)
+pip install 'git+https://github.com/facebookresearch/pytorch3d.git'
+```
+
+# 下载数据集
+
+我是在网页下载好再传上去, 用脚本会显示"failed: Connection refused"
+
+<Callout type='info' title='happy'>
+
+换新服务器了, 环境和数据集师兄已经处理好了.
+
+</Callout>
+
+# 数据集命名
+
+![aist_naming_explain](/blog/EDGE-paper-reproduction/aist_naming_explain.png)
+
+## Genres
+
+| Genres           | Symbols |
+| ---------------- | ------- |
+| Break            | gBR     |
+| Pop              | gPO     |
+| Lock             | gLO     |
+| Middle Hip-hop   | gMH     |
+| LA style Hip-hop | gLH     |
+| House            | gHO     |
+| Waack            | gWA     |
+| Krump            | gKR     |
+| Street Jazz      | gJS     |
+| Ballet Jazz      | gJB     |
+
+## Filming Situations
+
+| Situations     | Symbols |
+| -------------- | ------- |
+| Basic Dance    | sBM     |
+| Advanced Dance | sFM     |
+| Moving Camera  | sMM     |
+| Group Dance    | sGR     |
+| Showcase       | sSH     |
+| Cypher         | sCY     |
+| Battle         | sBT     |
+
+# 数据处理
+
+原数据集的结构如下
+
+<Files>
+  <Folder name="edge_aistpp">
+    <Folder name="wav" defaultOpen>
+      <File name="gWA_sFM_cAll_d27_mWA4_ch19.wav" />
+      <File name="gWA_sFM_cAll_d27_mWA5_ch20.wav" />
+      <File name="..." />
+    </Folder>
+    <Folder name="motion" defaultOpen>
+      <File name="gWA_sFM_cAll_d27_mWA4_ch19.pkl" />
+      <File name="gWA_sFM_cAll_d27_mWA5_ch20.pkl" />
+      <File name="..." />
+    </Folder>
+  </Folder>
+</Files>
+
+1. 根据三个文件 `ignore_list.txt`, `crossmodal_train.txt`, `crossmodal_test.txt` 确定怎么移动
+
+<Files>
+  <Folder name="edge_aistpp" defaultOpen>
+    <Folder name="train" defaultOpen>
+      <Folder name="wav">
+        <File name="(many '.wav' file)" />
+      </Folder>
+      <Folder name="motion">
+        <File name="(many '.pkl' file)" />
+      </Folder>
+    </Folder>
+    <Folder name="test" defaultOpen>
+      <Folder name="wav">
+        <File name="(many '.wav' file)" />
+      </Folder>
+      <Folder name="motion">
+        <File name="(many '.pkl' file)" />
+      </Folder>
+    </Folder>
+  </Folder>
+</Files>
+
+2. 然后对所有的文件进行了切片, 新的文件结构
+
+<Files>
+  <Folder name="edge_aistpp" defaultOpen>
+    <Folder name="train" defaultOpen>
+      <Folder name="gWA_sFM_cAll_d27_mWA4_ch19_sliced" defaultOpen>
+        <File name="gWA_sFM_cAll_d27_mWA4_ch19_slice0.pkl" />
+        <File name="gWA_sFM_cAll_d27_mWA4_ch19_slice0.wav" />
+      </Folder>
+      <Folder name="(other folder)" />
+    </Folder>
+    <Folder name="test">
+      <Folder name="gWA_sFM_cAll_d27_mWA5_ch20_sliced" defaultOpen>
+        <File name="gWA_sFM_cAll_d27_mWA5_ch20_sliced.pkl" />
+        <File name="gWA_sFM_cAll_d27_mWA5_ch20_sliced.wav" />
+      </Folder>
+      <Folder name="(other folder)" />
+    </Folder>
+  </Folder>
+</Files>
+
+3. 通过jukebox或baseline提取音频特征
+
+<Files>
+  <Folder name="edge_aistpp" defaultOpen>
+    <Folder name="train" defaultOpen>
+      <Folder name="gWA_sFM_cAll_d27_mWA4_ch19_sliced" defaultOpen>
+        <File name="gWA_sFM_cAll_d27_mWA4_ch19_slice0.pkl" />
+        <File name="gWA_sFM_cAll_d27_mWA4_ch19_slice0.npy" />
+      </Folder>
+      <Folder name="(other folder)" />
+    </Folder>
+    <Folder name="test">
+      <Folder name="gWA_sFM_cAll_d27_mWA5_ch20_sliced" defaultOpen>
+        <File name="gWA_sFM_cAll_d27_mWA5_ch20_sliced.pkl" />
+        <File name="gWA_sFM_cAll_d27_mWA5_ch20_sliced.npy" />
+      </Folder>
+      <Folder name="(other folder)" />
+    </Folder>
+  </Folder>
+</Files>

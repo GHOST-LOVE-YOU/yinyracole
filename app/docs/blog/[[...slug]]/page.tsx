@@ -12,6 +12,7 @@ import defaultMdxComponents from "fumadocs-ui/mdx";
 import { Accordion, Accordions } from "fumadocs-ui/components/accordion";
 import { Sandpack } from "@codesandbox/sandpack-react";
 import PdfViewer from "@/components/pdf-viewer";
+import { File, Folder, Files } from "fumadocs-ui/components/files";
 
 export default async function Page(props: {
   params: Promise<{ slug?: string[] }>;
@@ -33,7 +34,7 @@ export default async function Page(props: {
       toc={page.data.toc}
       full={page.data.full}
       {...(time ? { lastUpdate: new Date(time) } : {})}
-      footer={{enabled: false} }
+      footer={{ enabled: false }}
     >
       <DocsTitle>{page.data.title}</DocsTitle>
       <DocsDescription>{page.data.description}</DocsDescription>
@@ -45,6 +46,9 @@ export default async function Page(props: {
             Accordion,
             Sandpack,
             PdfViewer,
+            File,
+            Folder,
+            Files,
           }}
         />
       </DocsBody>
