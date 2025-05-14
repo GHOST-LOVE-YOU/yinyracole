@@ -1,0 +1,326 @@
+---
+title: awesome video diffusion - video generation
+description: awesome video diffusion - video generation
+---
+
+<Callout type='warn' title='注意'>
+
+从现在开始初印象只能是对摘要的总结, 记录跟着论文结构写, 看到某一部分就输出一些东西.
+
+</Callout>
+
+# ReVision: High-Quality, Low-Cost Video Generation with Explicit 3D Physics Modeling for Complex Motion and Interaction
+
+<Callout type='info' title='初印象'>
+
+解决的问题是生成复杂的motion和互动, 训练了即插即用的ReVision, 参数量较小只有1.5B. 预置真实物理知识, 生成分3步, 1)生成粗糙的视频. 2)从粗糙的视频中提取2D和3D特征, 生成一个3D建模, 然后生成精炼的3D motion序列. 3)它把生成的3D motion序列作为额外的信息又送入了原来的模型, 得到最终视频.
+
+</Callout>
+
+## 介绍
+
+依靠大规模的模型和高质量的数据集, 目前已经可以生成高质量和时间连续的视频, 但是由于缺乏物理原理, 很难实现对模型的微调, 同时最近的研究表明一昧的堆参数并不能做到完全的概括特征.
+
+他们提到了动画生成任务, 它们从这个任务中发现通过预置的2D关键点路径, 在更小的模型参数量和更小的数据集上取得了很好的效果(点名animate anyone), 因此他们就想, 能不能利用潜在的动作信息去知道更远的动作生成.
+
+> ReVision is to Regenerate Videos with explicit 3D physics representations, following an Extract–Optimize–Reinforce pipeline.
+
+对三步生成进行了更详细的表述, 好像用的是别人的diffusion模型, 他们的工作只是提供了一个框架? 而且我读到这里还不知道它的输入是什么.
+
+贡献有三个, 引入了物理知识; 三阶段的管道ReVision; 物理先验模型PPPM(arameterized Physical Prior Model)用于提取特征.
+
+## 相关工作
+
+### 视频生成
+
+当前研究不能保持物理合理性, 业界目前的做法是添加额外的输入像文本描述, optical flow(箭头).
+
+### 人类图片动画化
+
+它是把人的动作targe为真实的姿势序列, 可以是flow, 关键点或掩码. 还介绍了额外一些提取motion特征的方法, 指出了普遍缺陷--密集的motion序列信息在真实世界是unavailable的.
+
+## 初步知识
+
+latent, svd, vae这些
+
+## 方法
+
+![ReVisionMethod](/deeplearnning/paper/videoGeneration/ReVisionMethod.png)
+
+它的输入应该是多样的, 这篇模型提出的就是一种范式的管道, 和残差的思想有点像, 压缩我在输出的基础上优化.
+
+### 带motion条件的视频生成
+
+他们从预训练的SVD开始, 加了两个channel, 1)来自3D序列的部分级分割掩码, 2)对应的置信度图.
+
+![motion-conditioned](/deeplearnning/paper/videoGeneration/motion-conditioned.png)
+
+40%的训练数据提供完整的motion序列, 这类数据的置信度为1. 30%的数据只提供了目标pose, 如上图stage1里target pose的蓝圈和黄圈, 黄圈代表当前位置, 篮圈代表要求的最终位置, 置信度为0.5. 30%的训练数据没有motion条件, 靠SVD生成, 置信度为0.
+
+### Revision
+
+重复的表述, S1)根据给定的条件生成粗糙的视频, S2)通过一系列现成的模型提取特征, 运用PPPM使序列稳定连续高质量, 后面讲了一下PPPM具体怎么做的, S3)同S1一样的视频生成, 运用S2提取的特征
+
+## 数据集
+
+自己标注了2万个视频, 提供逐帧的二维边界框和语义掩码(有点水呀, 我甚至觉得这里是他们工作量最大的地方)
+
+## 实验+结果
+
+竟然和SVD进行比较, 后面懒得看了.
+
+# Turbo2K: Towards Ultra-Efficient and High-Quality 2K Video Synthesis
+
+<Callout type='info' title='初印象'>
+
+实现了2K的视频生成, latent space压缩视频, 知识蒸馏策略, 两步合成框架.
+
+</Callout>
+
+## 介绍
+
+现实世界对2K视频有需求, 我们对这两个方向进行了改进. 1)当前的方法牺牲了质量, 2)复杂情况下一致性差.
+
+举了个例子LTX-Video比同类减小了8倍的token量, 但是牺牲了质量和一致性.
+
+和其他模型比较, 兼顾了质量和效率. Turbo2K利用LTX-Video的VAE高效压缩token, 利用知识蒸馏在小模型生成精细的纹理和一致的帧.
+
+它们做了一个实验, 对比了LTX-Video和蒸馏后的LTX-Video, 结果如下图, 发现蒸馏后的LTX-Video在低分辨率下有更好的语义信息, 但是在高分辨率下表现很差, 为此它们提出了两阶段框架, 先用蒸馏后的LTX-Video生成低质量视频, 从中提取丰富的语义信息, 再指导高质量视频生成.
+
+![generation-result](/deeplearnning/paper/videoGeneration/Turbo2K-generation-result.png)
+
+## 方法
+
+![Turbo2K-overview](/deeplearnning/paper/videoGeneration/Turbo2K-overview.png)
+
+### 模型蒸馏
+
+尽管teacher和student在latent sapce和结构设计上不同, 它们内在表示有结构性相似的语义模式.
+
+蒸馏是这样做的, 如上图左边部分, 只看红色的路径是一个完整的DiT, Teacher提取的特征表示用于增强student的语义理解和详细的细节, 作为loss的一部分$\mathcal{L}_{\text{dis}}(\theta, \phi) := -\mathbb{E}_{\mathbf{v}, \epsilon, t} [\text{sim}(\mathbf{f}_{\text{tea}}, p_{\phi}(\mathbf{f}_{\text{stu}}))]$, 其中$p_{\phi}$是一个映射函数, 用于对齐student和teacher的token.
+
+ps: 关于蒸馏多说一点, student的参数量比teacher少, 但是我希望student在某一步的输出和teacher对齐, 这是我目前理解的蒸馏.
+
+在往后有一个讨论我看的云里雾里, 它表述teacher和student有相同的时间步t时表现更好, 如果teacher用finial timestep(0或者N吧), 近似于微调, 不太理解.
+
+### 两步合成
+
+原始的方法是先生成低分辨率视频, 再使用超分辨率技术提高分辨率, Turbo2K从低分辨率视频提取语义信息, 用它指导高分辨率视频的生成.
+
+ps: 也就是说只要语义信息丰富, 是可能直接生成高分辨率视频, 同时保持质量和连续性的.
+
+详细见"方法"中的图
+
+<Callout type='info' title='thinking'>
+
+在这里停下来思考一下, 从来没考虑过diffusion内部每一个块的输出意味着什么, 只关心输出是噪声, 下面是我对DiT的一个假设, 我甚至不知道DiT是不是和Unet一样上下采样的结构, 只是猜测每个DiT block提取的是忽略噪声的样本的特征或某种东西, 直接做高分辨率生成信息密度不够, 因为要生成的参数越多, 生成的随机性就越大, 但是如果我们把在LR model输出的特征展开, 和HR model的输出合并, 就可以保证它在一个不错的方向下生成.
+
+这样讲和超分辨率技术差不多, 只是它在模型内部完成了这个过程.
+
+</Callout>
+
+## 实验和结果
+
+使用HunYuanVideo(13B)作为teacher, LTX-Video(2B)作为student. 从质量和速度两个方面进行了比较, 质量比较用的VBench-Long.
+
+消融实验做了两个. 1)模型蒸馏时, 探讨了是否需要teacher, teacher是t怎么取合适. 2)两步生成时, 探讨了将LR guide换成Latent guide, Feature guide($t_{l}=t_{h}$), Feature guide($t_{l}=0.1$)时的表现.
+
+## 限制和未来工作
+
+高动态和视觉复杂场景表现不佳, 手部姿势不连贯, 未来考虑扩大模型和数据库.
+
+当前VAE结构不支持时间分区编码, 不能生成长视频.
+
+# Seaweed-7B: Cost-Effective Training of Video Generation Foundation Model
+
+<Callout type='info' title='初印象'>
+
+这是一篇科技报告, 字节跳动训练了一个视频生成基础模型Seaweed-7B. 1)性能与更大的模型媲美. 2)有广泛的下游应用
+
+</Callout>
+
+## 介绍
+
+基础模型在现代机器学习中至关重要, 视频生成的进步可以推动图片动画化, 视频编辑, 视频动画化等一系列下游应用的进步.
+
+视频生成最近几年高速发展, 训练视频生成基础模型需要大量GPU算力.
+
+视频生成推理比语言和音频占用更多GPU内存, 更多服务器开销, 主流倾向于使用中小型模型.
+
+在大语言模型领域, Deepseek v3(37B)超过了72B和420B的稠密模型, 关键是Moe, MTP和高质量的数据集.
+
+在视频生成领域, 小模型和大模型之间还有很大差距, Seaweed-7B讨论了一种具有成本效益的方式训练视频生成基础模型. 1000块H100上训练了27.7天, 共665,000小时.
+
+在评估阶段, 讨论了通用生成能力和下游泛化能力. 结果表明中型网络还有很大的开发潜能.
+
+## 数据
+
+数据的质量和多样性比数量重要. 数据量是100M条, 长度都是8s左右.
+
+### 数据处理
+
+有一个复杂的数据处理管道: 时间分割, 空间裁剪, 质量过滤, 多方面数据平衡, 视频去重, 视频caption, 系统提示词. 每一类也都有详细介绍.
+
+### 高通量管道
+
+分割, 裁剪, 筛选, 去重, pack管道处理. 提到了两个工具BMF和Ray.
+
+## 设计和讨论
+
+### VAE
+
+介绍了一下VAE的概念, 压缩率的计算, 特别关注输入是picture+video, picture应该是视频首帧. 接着它们写了实验的几个发现.
+
+1. **压缩率影响重构的质量, 下采样率影响收敛速度.** 在压缩率相同的情况下, 下采样率越小, 收敛速度越快.
+2. **VAE效果要优于DiT patchification.** 它们设计了两组实验对照, 1)48x的VAE和patch size(1,2,2), 2)64x的VAE和patch size(1,1,1), 发现第二组效果更好.
+3. **混合分辨率训练有助于提高高分辨率和长时间重建的泛化能力.** 为了加快收敛, 我们通常用低分辨率的数据训练, 这就导致高分辨率内容解码质量不佳. 他们的数据集包含不同分辨率的视频和图片, 先用图片训练使它快速收敛, 再用视频训练.
+4. **改善VAE训练稳定性的配方.** 1)同时使用了视频辩别器和图片辩别器. 2)使用了PatchGAN辩别器. 3)SpectralNorm代替BatchNorm.
+
+### Diffusion Transformer Model
+
+1. **Hybrid-stream.** 使用dual-stream DiT使每种模态发展自己的表示. 激活函数使用SwiGLU代替GeLU. 使用AdaSingle for timestep modulation在更深层共享2/3的FFN参数. 这种结构可以更快的收敛.
+2. **full attention加强了训练的可拓展性.** 先介绍三种attention. 1)space-attention, 忽略时间维度, 注意力计算只发生在同一维度. 2)window attention, 将注意力限制在一个预定义的3D窗口(高度x宽度x时间)内部. 3)space-only attention, full attention和space-only attention交替进行. 实验结论是1)full-attention比space-only的拓展性强, 2)在FLOPS早期window attention的loss低于full-attention, 但后期full-attention反超window attention. 最终使用的策略是使用full attention预训练, 使用window attention微调.
+3. **multimodal rotary position embedding (MM-RoPE).** 添加了时间, 长度和宽度信息, 三个component共享位置ID.
+
+### 训练
+
+#### 预训练
+
+从低分辨率的图片开始, 使文本提示词和寻常的视觉概念可以对齐. 接着在每个batch, 图片和视频的token以一定的比例混合, 完整的配置见下表.
+
+| Training stage | Image Resolution      | Video Resolution | Step Percentage |
+| -------------- | --------------------- | ---------------- | --------------- |
+| Stage 0: 256p  | [256×256, 512×512]    | -                | 37.5%           |
+| Stage 1: 256p  | [256×256, 512×512]    | [256×256]        | 25.0%           |
+| Stage 2: 480p  | [640×480, 1280×720]   | [640×480]        | 25.0%           |
+| Stage 3: 720p  | [1280×720, 1920×1024] | [1280×720]       | 12.5%           |
+
+在视频训练过程中, 包含text-to-video, image-to-video和video-to-video任务.
+
+text-to-video任务最难收敛, 我们发现小比例(20%)的image-to-video任务改善text-to-video的表现, 但是比例太大就适得其反.
+
+#### 后训练
+
+介绍了两种方法, 1)supervised fine-tuning (SFT), 这个主要是为了改善美学和视觉风格, 他们提取了700k个质量很高的视频进行训练, 然后又这里面又精选50k个视频个最高的权重, 定学习率的情况下训练, 训练需适度, 延长训练很容易导致prompt-following和motion质量的下降. 2)reinforcement learning from human feedback (RLHF), SFT以后经常发现motion和结构不一致的问题如下图, 通过Direct Preference Optimization (DPO), 它们要求从生成的4个视频中选择最好的和最差的, 用于改善训练.
+
+![RLHF](/deeplearnning/paper/videoGeneration/RLHF.png)
+
+**没有必要转换参考模型.** 其实就是说偏好数据集在参考模型上训练一轮就够了, 多训练提升不大还会导致其他维度的表现下降.
+**对image-to-video任务的特别处理.** 它的大致意思是生成视频的首帧和后面的不对齐, 当前的loss无法指导, 然后它们怎么做的没有看懂.
+
+#### 关键策略
+
+1. 3D平行策略. 1) 数据并行, 一个batch分成很多小份, 每个GPU处理一小份. 2)模型分片. 使用FSDP (Fully Sharded Data Parallel)将模型参数, 优化器状态和梯度分配到不同的GPU上. 3)上下文并行. 使用Ulysses技术迭代的将样本在序列维度(文本长度方向)和头维度(多头注意力维度)上进行分片.
+
+2. runtime平衡. seq长度和runtime之间并不是线性关系, 也就说相同seq长度的数据组合在同一片GPU上的runtime可能是不同的, 实验统计了不同seq的runtime, 优化了分配策略. 见下图
+
+![runtime-blance](/deeplearnning/paper/videoGeneration/runtime-blance.png)
+
+3. Multi-Levels Activation Checkpointing(MLAC). 首先我们需要理解activation checkpointing(AC), 为了节省GPU内存, 不保存前向传播过程中的所有中间层的激活值, 只保存模型中某些模块(比如一个 Transformer Block 或一层)的输入激活值, 如下图(a)Vanilla AC所示, 前向传播每通过一层, GPU memory没有回到原点, 还是保存了中间激活点. 在反向传播过程中, 使用之前保存的输入激活点, 需要重新运行该单元的前向计算. 而MLAC通过分层存储(转移到CPU memory和SSD)和异步传输来管理中间激活值, 避免OOM(out of memory)和提高效率.
+
+![MLAC](/deeplearnning/paper/videoGeneration/MLAC.png)
+
+4. 融合内核. 一些经常访问内存的io操作阻碍了CUDA的充分利用, 引入了内核融合技术, 利用寄存器和共享内存存储来自连续内存访问密集型操作符的中间结果, 并将它们融合成一个单一的CUDA内核.
+
+#### 优化
+
+<Callout type='info' title=''>
+
+不是重点, GPT速通一下
+
+</Callout>
+
+1. 推理优化. 使用了蒸馏技术, 三个阶段, 其实已经偏离看论文的主要目的就不深究了.
+2. VAE优化. causal chunking, 高分辨率分割处理, 多GPU并行处理, 跨GPU信息传递.
+3. Rephraser. 就是对用户的提示词进行重新措辞.
+
+## 评估
+
+### 视频生成定量分析
+
+选择了image-to-video任务和text-to-video任务.
+
+它们在一个网站进行真实用户的评估(cool), 相应指标是Elo scores. 另外他们还额外提出了视觉质量, motion质量, prompt following, 参考图像连续性这些指标.
+
+### 推理时间
+
+和wan2.1对比, 质量更好, 速度快了62倍.
+
+### VAE结果
+
+反正就是一些指标,,,
+
+![seaweed7B-vae-result](/deeplearnning/paper/videoGeneration/seaweed7B-vae-result.png)
+
+## 应用
+
+image-to-video, human video, subject-consistent, video-audio joint, Long-video generation and storytelling, Real-time generation, Super-resolution generation, Camera controlled generation
+
+<Callout type='info' title=''>
+
+详细的笔记确实可以提高阅读的质量, 论文的内容经过自己的思考后重新表述一遍也不能说是浪费时间, 不断否定自己是真的痛苦, 先这样尝试一段时间, 希望读熟练了可以做到详略有当.
+
+</Callout>
+
+# VPO: Aligning Text-to-Video Generation Models with Prompt Optimization
+
+<Callout type='info' title='初印象'>
+
+针对text-to-video任务的提示词优化, 三个核心的原则: 无害, 准确, 有用. 在技术细节上, 采用两步优化, 1)构建有监督微调数据集, 2)文本层次和视频层次的反馈.
+
+</Callout>
+
+## 介绍
+
+当前最优秀的text-to-video模型都是在有详细的prompt的数据集上训练的, 但是真实世界的用户输入过于简单, 导致生成的视频质量一般.
+
+当前主流用LLM优化提示词, 但是1)安全担忧2)不准确的提炼3)忽略最终视频的质量, 再次基础上提出无害, 准确, 有用的原则.
+
+接着介绍了框架VPO, 1)在构建数据集阶段, 用LLM构建, 再根据无害, 准确, 有用三个原则进行优化.2)在微调阶段, Direct Preference Optimization (DPO)策略.
+
+讲实验结果, 在多个模型上测试, 超过了diffusion-DPO, 有RLHF(reinforcement learning from human feedback)的潜力.
+
+## 方法
+
+![VPO-overview](/deeplearnning/paper/videoGeneration/VPO-overview.png)
+
+### principle-based SFT
+
+1. query curation. 它们的原始数据集来自VidProM dataset, 100k条真实的text-to-video query, 1)基于关键字, 特别字符和query长度初筛. 2)筛选掉相似的query. 3)给不安全的query打上标签. 后面两步用LLM完成的. 最终数据集是18k常规的数据, 2k条和安全相关的数据, 10k条用于SFT, 10k条用于DPO.
+2. 提示词构建. 用LLM生成query对应的优化后提示词, 保留上下文建议.
+3. 根据3原则精炼. 用LLM评价当前promot的问题, 基于批判refine提示词.
+4. 训练 model. 看后面它们有一个基础模型, 根据第三步处理后的query-prompt pairs对基础模型进行微调.
+
+### Multi-Feedback Preference Optimization
+
+text level的反馈确保与用户的意图对齐确保安全, video level的反馈确保生成高质量的提示词指导视频生成.
+
+1. 数据采样, 对于每个query, 用上一步的SFT model生成K个promot.
+2. text-level的数据构建. 同样的3原则,对齐用户意图, 保证安全, 用LLM去做feedback. 没有通过的promot会通过refine修改.
+3. video-level的数据构建. 这个用了一个优秀的视频建立模型VisionReward去做feedback, 每个生成的视频都会有一个score, 指导模型训练.
+
+## 实验
+
+### 实验设置
+
+骨干模型是 `CogVideoX` 和 `Open-Sora 1.2`. 对于`CogVideoX`, 使用官方基于GLM-4的提示词优化, GPT4o上下文提示词方法作为基准. 对于`Open-Sora 1.2`, GPT4o重写方式作为基准.
+
+VBench和MonetBench用于评估text-to-video的质量, GPT4o用于评估提示词对齐, T2VSafetyBench评估提示词安全问题.
+
+<Callout type='info' title=''>
+
+接着是text-to-video质量评估, text-level对齐, 安全评估的结果
+
+</Callout>
+
+### 与RLHF的比较
+
+没有看出内容和这个小标题的关联, 结果展示了提示词优化对于提高视频生成质量对齐用户意图的重要性, VPO和diffusion DPO一起使用可以带来额外的收益.
+
+### 可迭代的优化
+
+在前三次迭代时表现提升后趋于稳定--多次迭代不会造成表现下降.
+
+### 跨模型的能力
+
+迁移到其他text-to-video模型依然获得很好的表现提升.

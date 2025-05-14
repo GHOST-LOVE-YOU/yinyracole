@@ -5,6 +5,12 @@ description: stable diffusion 基本概念
 
 这篇是fastai第九讲[视频资源](https://youtu.be/_7rMfsA24Ls)的笔记, 笔者认为从一个很好理解的角度解释了stable diffusion
 
+<Callout type='info' title=''>
+
+the rest of the class is a shit
+
+</Callout>
+
 # 从一个神奇的函数开始
 
 首先我们想象有函数f, 对于每一张图片, 他能返回"可能是数字"的概率, 比如下图中的x1为数字的概率为0.98, x2为数字的概率为0.4, x3为数字的概率为0.02
@@ -62,3 +68,7 @@ description: stable diffusion 基本概念
 1. 记录timestep, 不同时间步添加不同程度(方差, c决定)的噪声, 通过diffusion sampler控制
 2. 新的观点认为在"从一个神奇的函数开始"中提到的c -> LR, diffusion sampler -> optimiser, 是否需要t存疑
 3. perceptual loss代替MSE
+
+# thanks
+
+[A different way to look at Stable Diffusion](https://rekil156.github.io/rekilblog/posts/lesson9_stableDissufion/Lesson9.html)

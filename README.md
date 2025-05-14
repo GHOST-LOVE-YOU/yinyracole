@@ -1,26 +1,7 @@
-# yinyracole
+# 介绍
 
-This is a Next.js application generated with
-[Create Fumadocs](https://github.com/fuma-nama/fumadocs).
+这是yinyracole的blog, 基于[Fumadocs](https://github.com/fuma-nama/fumadocs), 目前还在开发中.
 
-Run development server:
+# 动机
 
-```bash
-npm run dev
-# or
-pnpm dev
-# or
-yarn dev
-```
-
-Open <http://localhost:3000> with your browser to see the result.
-
-## Learn More
-
-To learn more about Next.js and Fumadocs, take a look at the following
-resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js
-  features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-- [Fumadocs](https://fumadocs.vercel.app) - learn about Fumadocs
+本人曾是ai重度依赖者, 为此吃了不少苦头, 希望通过这种方式回归coding的乐趣, 找回自己的思考, 持续更新中.
