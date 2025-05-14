@@ -1,0 +1,18 @@
+---
+title: paper2
+description: paper2
+---
+
+# Animate Anyone: Consistent and Controllable Image-to-Video Synthesis for Character Animation
+
+<Callout type='info' title='初印象'>
+
+效果非常好, 有官网展示实验结果很清楚, 一眼就知道它们在做什么, github有14.7k star但是没有开源代码, 不知道考虑伦理问题还是什么, 有点可惜.
+
+1. 人物IP保持很好. 使用CLIP提取予以特征, 另外基于SD的权重训练了一个ReferenceNet提取详细特征. 特征注入方面, 将提取到的特征通过了Spatial-attention, Temporal-Attention等注意力块, 和北师大PoPDG那篇方法差不多.
+2. 动作连续性. 因为输入中有Pose Sequence, 这个连续性好我觉得是应该的.
+3. 用到了VAE压缩图片, 减小计算量.
+
+听说这篇文章有人已经复现出来了, 但是毕竟官方没有开源, 不想就通过这一篇论文去概括这个领域的发展现状, 放在以后讨论.
+
+</Callout>
