@@ -324,3 +324,43 @@ VBench和MonetBench用于评估text-to-video的质量, GPT4o用于评估提示�
 ### 跨模型的能力
 
 迁移到其他text-to-video模型依然获得很好的表现提升.
+
+# Video-T1: Test-Time Scaling for Video generation
+
+<Callout type='info' title='初印象'>
+
+不改变模型结构的情况下, 通过增加推理时间改善视频生成的质量(Test-Time Scaling).
+
+</Callout>
+
+## 方法
+
+### 在视频生成领域做tts
+
+介绍了tts in video generation 特别的难点, 保持空间和时间的连续性, 同时diffusion去噪过程的高迭代性.
+
+对一些概念进行阐述, 视频生成器, 测试验证器, 启发式搜索算法, 看到后面的图很好理解.
+
+### 随机线性搜索
+
+![tts-linear-search](/deeplearnning/paper/videoGeneration/tts-linear-search.png)
+
+这是他们的baseline, 文章中将它比作由N个退化数组成的森林, 搜索任务就变成了选择其中最好的T长度路径.
+
+### Tree-of-Frames搜索
+
+这个方法是针对自回归模型, 不适用那种降噪整个视频序列的diffusion. 文字很难理解, 一定要结合下面的图.
+
+论文中解释的不是很清楚, 自回归模型是逐帧生成视频的, 作者的思路是可以把它看成一棵树, 一直在向外延展.
+
+1. 图片级对齐. 关注`bad video clip`, 在降噪过程中, 一旦可以看出大概的轮廓, 用验证器对图片进行评估, 排除低潜力的生成, 将计算资源分配给更有潜力的去噪过程.
+2. 层次化提示. 视频生成的策略和输入都没有变化, 改变在验证器的promot, 1)在首帧, 验证器的promot是input text中的核心语义, 2)中间帧只说了用动态的prompt, prompt怎么来的没说, 3)在结尾帧promot为连续性和motion.
+3. 分支和裁剪. 关注左边的两个bad video clip, 叉掉之后由邻近的video clip多一个分支补齐, 此为分支; 关注中间的三个bad video clip, 最终路径只剩下4个, 此为裁剪.
+
+![tts-tree-of-frames-search](/deeplearnning/paper/videoGeneration/tts-tree-of-frames-search.png)
+
+<Callout type='info' title=''>
+
+下面就每什么要关注的, 在不同的model上实验, 用两种搜索方法. 这篇的论述是真难理解, 实践意义也不大.
+
+</Callout>
