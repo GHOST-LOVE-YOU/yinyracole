@@ -364,3 +364,27 @@ VBench和MonetBench用于评估text-to-video的质量, GPT4o用于评估提示�
 下面就每什么要关注的, 在不同的model上实验, 用两种搜索方法. 这篇的论述是真难理解, 实践意义也不大.
 
 </Callout>
+
+# LayerFlow: A Unified Model for Layer-aware Video generation
+
+<Callout type='info' title='初印象'>
+
+![layerflow-overview](/deeplearnning/paper/videoGeneration/layerflow-overview.png)
+
+直接看图, 关注三个层次, 透明foreground, 背景, 混合场景, 用户给定每一层的提示词, 模型生成对应的视频. 由此引申出一些变体:分解混合场景, 为foreground增加背景, 为背景增加foreground.
+
+总结工作: 1)从text-to-video的diffusion transformer开始, 把视频按前面提到的3个层次拆分, 叫做sub-clips, 利用层嵌入区分每种clip. 2)高质量数据集的缺乏, 设计了多阶段训练策略.
+
+</Callout>
+
+## 介绍
+
+肯定前人工作, 划定自己的研究范围layer-ware的视频生成.
+
+讲意义, layer-ware的视频生成能实现分离和重组, 在视觉工作中有潜在的应用价值. 讲述前人工作, 提出问题(和工作总结对应): 1) 不同层次的表示和融合方法有待探索, 2)高质量数据集稀缺.
+
+讲方法, 在下面详细看.
+
+讲成果, 在生成质量和语义对齐方面优于其他解决方案, 衍生应用(见图一)
+
+## 相关工作
