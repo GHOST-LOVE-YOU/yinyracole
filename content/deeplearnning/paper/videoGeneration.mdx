@@ -364,3 +364,53 @@ VBench和MonetBench用于评估text-to-video的质量, GPT4o用于评估提示�
 下面就每什么要关注的, 在不同的model上实验, 用两种搜索方法. 这篇的论述是真难理解, 实践意义也不大.
 
 </Callout>
+
+# LayerFlow: A Unified Model for Layer-aware Video generation
+
+<Callout type='info' title='初印象'>
+
+![layerflow-overview](/deeplearnning/paper/videoGeneration/layerflow-overview.png)
+
+直接看图, 关注三个层次, 透明foreground, 背景, 混合场景, 用户给定每一层的提示词, 模型生成对应的视频. 由此引申出一些变体:分解混合场景, 为foreground增加背景, 为背景增加foreground.
+
+总结工作: 1)从text-to-video的diffusion transformer开始, 把视频按前面提到的3个层次拆分, 叫做sub-clips, 利用层嵌入区分每种clip. 2)高质量数据集的缺乏, 设计了多阶段训练策略.
+
+</Callout>
+
+## 介绍
+
+肯定前人工作, 划定自己的研究范围layer-ware的视频生成.
+
+讲意义, layer-ware的视频生成能实现分离和重组, 在视觉工作中有潜在的应用价值. 讲述前人工作, 提出问题(和工作总结对应): 1) 不同层次的表示和融合方法有待探索, 2)高质量数据集稀缺.
+
+讲方法, 在下面详细看.
+
+讲成果, 在生成质量和语义对齐方面优于其他解决方案, 衍生应用(见上图)
+
+## 方法
+
+<Callout type='warn' title=''>
+
+LoRA技术不了解, 下周需要读一篇相关的论文.
+
+</Callout>
+
+![layerflow-method](/deeplearnning/paper/videoGeneration/layerflow-method.png)
+
+### 整体框架
+
+从下往上看, 1)文本嵌入. 很朴素的方式, 用"0,1,2"这样的方式去区分sub-clip, 再加上层嵌入. 2)视频表示. RGB三通道加alpha-matte(用于表示透明部分), VAE编码. 3)在摘要中提到的变体, 通过去除对应条件的噪声实现(核心是diffusion)
+
+### 训练pipeline
+
+第一阶段, 传统的diffusion那一套, 数据用的SAM-Track, 自筛选, 模型分离等方式最终得到\{𝑓𝑜𝑟𝑒𝑔𝑟𝑜𝑢𝑛𝑑, 𝑎𝑙𝑝ℎ𝑎, 𝑏𝑎𝑐𝑘𝑔𝑟𝑜𝑢𝑛𝑑, 𝑏𝑙𝑒𝑛𝑑𝑒𝑑}对, 存在动作模糊, foreground模糊的问题, 导致alpha不好制作.
+
+第二阶段, Motion LoRA训练. 从原视频中随机取一帧制作静态视频集, foreground和background复制粘贴到一起得到blended(copy-paste), 只用作这一阶段的训练, 具体怎么训练的不清楚.
+
+第三阶段, Conent LoRA训练. 怎么训练的不清楚, 训练数据包含copy-paste和图像抠图数据集.
+
+可以看出阶段2和阶段3是为了解决阶段1中提到的motion模糊和foreground模糊的问题, 进一步深究是在解决介绍中提出的两个问题.
+
+## 实验
+
+1. 实现细节. 基于CogVideoX, 16帧, 480x720, 8个A100上训练. 2) 多层视频数据集贡献. 用了Qwen-VL筛选数据. 3)评估协议. 包括用户学习和VBench, 提示侧设置借助了GPT-4和CogVLM2,
